@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FPN · Verificador de Nível PAR 2025–2028</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #042C53;
+    --blue: #185FA5;
+    --light-blue: #D6E4F7;
+    --sky-blue: #EBF3FB;
+    --gold: #C9A84C;
+    --teal: #0F6E56;
+    --green: #1A6B3C;
+    --gray-50: #F8FAFC;
+    --gray-100: #F1F5F9;
+    --gray-200: #E2E8F0;
+    --gray-300: #CBD5E1;
+    --gray-500: #64748B;
+    --gray-700: #334155;
+    --gray-900: #0F172A;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color: var(--gray-900);
+    background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+    color: white; padding: 28px 24px; box-shadow: var(--shadow-md);
+    position: relative;
+  }
+  .header::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 4px; background: var(--gold);
+  }
+  .header-content { max-width: 1200px; margin: 0 auto; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .header .subtitle { font-size: 13px; color: rgba(255,255,255,0.75); }
+  .badge-gold {
+    display: inline-block; background: var(--gold); color: var(--navy);
+    padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; margin-left: 10px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 24px 80px; }
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    background: white; padding: 6px; border-radius: 12px; box-shadow: var(--shadow-sm);
+  }
+  .tab {
+    flex: 1; padding: 10px 16px; border: none; background: transparent;
+    color: var(--gray-500); font-size: 13px; font-weight: 600;
+    cursor: pointer; border-radius: 8px; transition: all 0.15s;
+    font-family: inherit; text-align: center;
+  }
+  .tab:hover { color: var(--navy); background: var(--gray-50); }
+  .tab.active {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+    color: white; box-shadow: var(--shadow-sm);
+  }
+  .tab small { display: block; font-size: 10px; opacity: 0.7; font-weight: 500; margin-top: 1px; }
+  .tab.active small { opacity: 0.85; }
+  .card {
+    background: white; border-radius: 14px; box-shadow: var(--shadow-md);
+    padding: 24px; margin-bottom: 24px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--blue); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content: ''; display: inline-block; width: 4px; height: 14px;
+    background: var(--gold); border-radius: 2px;
+  }
+  .form-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 11px; font-weight: 600; color: var(--gray-700);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .field select, .field input {
+    padding: 10px 12px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: 14px; background: var(--gray-50);
+    transition: all 0.15s; color: var(--gray-900); font-family: inherit;
+    width: 100%;
+  }
+  .field select:focus, .field input:focus {
+    outline: none; border-color: var(--blue); background: white;
+    box-shadow: 0 0 0 3px rgba(24,95,165,0.1);
+  }
+  .field .hint { font-size: 10.5px; color: var(--gray-500); }
+  .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .btn-primary { background: var(--navy); color: white; box-shadow: var(--shadow-sm); }
+  .btn-primary:hover { background: var(--blue); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-700); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .results { display: none; }
+  .results.show { display: block; }
+  .level-banner {
+    border-radius: 14px; padding: 24px; margin-bottom: 24px;
+    color: white; box-shadow: var(--shadow-lg);
+    position: relative; overflow: hidden;
+  }
+  .level-banner::before {
+    content: ''; position: absolute; top: 0; right: 0;
+    width: 120px; height: 120px; background: rgba(255,255,255,0.06);
+    border-radius: 50%; transform: translate(40px, -40px);
+  }
+  .level-banner-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; opacity: 0.8; margin-bottom: 6px;
+    position: relative;
+  }
+  .level-banner-name {
+    font-size: 30px; font-weight: 800; letter-spacing: -0.02em;
+    line-height: 1.1; margin-bottom: 6px; position: relative;
+  }
+  .level-banner-details { font-size: 14px; opacity: 0.9; position: relative; }
+  .level-banner-time {
+    font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums;
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.2); position: relative;
+  }
+  .level-banner-time strong { font-size: 22px; font-weight: 800; }
+  .level-banner-time small {
+    display: block; font-size: 12px; font-weight: 500;
+    opacity: 0.85; margin-top: 4px;
+  }
+  .next-levels-title {
+    font-size: 13px; font-weight: 700; color: var(--gray-700);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 12px; padding-left: 4px;
+  }
+  .next-levels-grid { display: grid; gap: 12px; }
+  .next-level-card {
+    background: white; border-radius: 12px; padding: 16px 18px;
+    box-shadow: var(--shadow-sm); border-left: 4px solid var(--gray-300);
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: center; gap: 16px; transition: all 0.15s;
+  }
+  .next-level-card:hover { box-shadow: var(--shadow-md); transform: translateX(2px); }
+  .next-level-card.achieved {
+    background: linear-gradient(to right, #F0FDF4 0%, white 50%);
+  }
+  .next-level-card.current { box-shadow: 0 0 0 2px var(--gold), var(--shadow-md); }
+  .next-level-name {
+    font-size: 15px; font-weight: 700; color: var(--gray-900);
+    letter-spacing: -0.01em;
+  }
+  .next-level-target {
+    font-size: 12px; color: var(--gray-500);
+    font-variant-numeric: tabular-nums; margin-top: 2px;
+  }
+  .next-level-gap { text-align: right; }
+  .next-level-gap-time {
+    font-size: 18px; font-weight: 700;
+    font-variant-numeric: tabular-nums; color: var(--gray-900);
+  }
+  .next-level-gap-pct {
+    font-size: 11px; color: var(--gray-500);
+    font-weight: 600; margin-top: 2px;
+  }
+  .next-level-card.achieved .next-level-gap-time { color: var(--green); }
+  .next-level-card.achieved .next-level-gap-time::before { content: '✓ '; }
+  .pct-bar {
+    grid-column: 1 / -1; height: 4px;
+    background: var(--gray-200); border-radius: 2px;
+    margin-top: 10px; overflow: hidden;
+  }
+  .pct-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .badge-current {
+    display: inline-block; background: var(--gold); color: var(--navy);
+    padding: 1px 7px; border-radius: 8px; font-size: 10px;
+    font-weight: 700; letter-spacing: 0.04em; margin-left: 6px;
+    vertical-align: middle;
+  }
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--gray-500);
+  }
+  .empty-state-icon { font-size: 38px; margin-bottom: 12px; opacity: 0.3; }
+  .empty-state-text { font-size: 14px; }
+  .warning {
+    background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E;
+    padding: 12px 16px; border-radius: 8px;
+    font-size: 13px; margin-bottom: 16px;
+  }
+  .info-block {
+    background: var(--sky-blue); border-left: 3px solid var(--blue);
+    padding: 10px 14px; border-radius: 6px;
+    font-size: 12.5px; color: var(--gray-700); margin-bottom: 16px;
+  }
+  .info-block strong { color: var(--navy); }
+  .footer-note {
+    text-align: center; font-size: 11px;
+    color: var(--gray-500); margin-top: 30px; line-height: 1.6;
+  }
+  @media (max-width: 600px) {
+    .header { padding: 22px 16px; }
+    .header h1 { font-size: 18px; }
+    .container { padding: 16px; }
+    .card { padding: 18px; }
+    .level-banner-name { font-size: 24px; }
+    .level-banner-time { font-size: 13px; }
+    .level-banner-time strong { font-size: 18px; }
+    .next-level-card { grid-template-columns: 1fr; gap: 6px; }
+    .next-level-gap { text-align: left; }
+    .tabs { flex-wrap: wrap; }
+    .tab { flex: 1 1 calc(50% - 4px); font-size: 12px; padding: 8px; }
+  }
+  .bg-medalhado { background: linear-gradient(135deg, #1A6B3C 0%, #0E4D29 100%); }
+  .bg-topElite  { background: linear-gradient(135deg, #0C447C 0%, #062C56 100%); }
+  .bg-elite     { background: linear-gradient(135deg, #185FA5 0%, #0C3F73 100%); }
+  .bg-aq28      { background: linear-gradient(135deg, #7B3F00 0%, #5C2E00 100%); }
+  .bg-aq27      { background: linear-gradient(135deg, #5C2E00 0%, #3F1E00 100%); }
+  .bg-aq26      { background: linear-gradient(135deg, #3F1E00 0%, #2A1500 100%); }
+  .bg-sen-a     { background: linear-gradient(135deg, #042C53 0%, #021833 100%); }
+  .bg-sen-b     { background: linear-gradient(135deg, #0C447C 0%, #062C56 100%); }
+  .bg-sen-c     { background: linear-gradient(135deg, #185FA5 0%, #0C3F73 100%); }
+  .bg-sub23-a   { background: linear-gradient(135deg, #0C447C 0%, #062C56 100%); }
+  .bg-sub23-b   { background: linear-gradient(135deg, #185FA5 0%, #0C3F73 100%); }
+  .bg-sub23-c   { background: linear-gradient(135deg, #2471C8 0%, #185FA5 100%); }
+  .bg-pa-sub23  { background: linear-gradient(135deg, #185FA5 0%, #0C3F73 100%); }
+  .bg-jun-a     { background: linear-gradient(135deg, #0F6E56 0%, #084838 100%); }
+  .bg-jun-b     { background: linear-gradient(135deg, #1D9E75 0%, #0F6E56 100%); }
+  .bg-jun-c     { background: linear-gradient(135deg, #2EC490 0%, #1D9E75 100%); }
+  .bg-pa-jun    { background: linear-gradient(135deg, #1D9E75 0%, #0F6E56 100%); }
+  .bg-jov-a     { background: linear-gradient(135deg, #633806 0%, #421F00 100%); }
+  .bg-jov-b     { background: linear-gradient(135deg, #854F0B 0%, #633806 100%); }
+  .bg-jov-c     { background: linear-gradient(135deg, #A86720 0%, #854F0B 100%); }
+  .bg-pa-jov    { background: linear-gradient(135deg, #854F0B 0%, #633806 100%); }
+  .bg-sub       { background: linear-gradient(135deg, #475569 0%, #1E293B 100%); }
+  .border-medalhado { border-left-color: #1A6B3C !important; }
+  .border-topElite  { border-left-color: #0C447C !important; }
+  .border-elite     { border-left-color: #185FA5 !important; }
+  .border-aq28      { border-left-color: #7B3F00 !important; }
+  .border-aq27      { border-left-color: #5C2E00 !important; }
+  .border-aq26      { border-left-color: #3F1E00 !important; }
+  .border-sen-a     { border-left-color: #042C53 !important; }
+  .border-sen-b     { border-left-color: #0C447C !important; }
+  .border-sen-c     { border-left-color: #185FA5 !important; }
+  .border-sub23-a   { border-left-color: #0C447C !important; }
+  .border-sub23-b   { border-left-color: #185FA5 !important; }
+  .border-sub23-c   { border-left-color: #2471C8 !important; }
+  .border-pa-sub23  { border-left-color: #185FA5 !important; }
+  .border-jun-a     { border-left-color: #0F6E56 !important; }
+  .border-jun-b     { border-left-color: #1D9E75 !important; }
+  .border-jun-c     { border-left-color: #2EC490 !important; }
+  .border-pa-jun    { border-left-color: #1D9E75 !important; }
+  .border-jov-a     { border-left-color: #633806 !important; }
+  .border-jov-b     { border-left-color: #854F0B !important; }
+  .border-jov-c     { border-left-color: #A86720 !important; }
+  .border-pa-jov    { border-left-color: #854F0B !important; }
+  .border-jo28      { border-left-color: #C9A84C !important; }
+  .fill-medalhado { background: #1A6B3C; }
+  .fill-topElite  { background: #0C447C; }
+  .fill-elite     { background: #185FA5; }
+  .fill-aq28      { background: #7B3F00; }
+  .fill-aq27      { background: #5C2E00; }
+  .fill-aq26      { background: #3F1E00; }
+  .fill-sen-a     { background: #042C53; }
+  .fill-sen-b     { background: #0C447C; }
+  .fill-sen-c     { background: #185FA5; }
+  .fill-sub23-a   { background: #0C447C; }
+  .fill-sub23-b   { background: #185FA5; }
+  .fill-sub23-c   { background: #2471C8; }
+  .fill-pa-sub23  { background: #185FA5; }
+  .fill-jun-a     { background: #0F6E56; }
+  .fill-jun-b     { background: #1D9E75; }
+  .fill-jun-c     { background: #2EC490; }
+  .fill-pa-jun    { background: #1D9E75; }
+  .fill-jov-a     { background: #633806; }
+  .fill-jov-b     { background: #854F0B; }
+  .fill-jov-c     { background: #A86720; }
+  .fill-pa-jov    { background: #854F0B; }
+  .fill-jo28      { background: #C9A84C; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-content">
+    <h1>Verificador de Nível PAR<span class="badge-gold">2025–2028</span></h1>
+    <div class="subtitle">Federação Portuguesa de Natação · Apoio ao Alto Rendimento — JO Los Angeles 2028</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" data-mode="par-pl">PAR Piscina Longa<small>SEN · SUB23 · PA · JUN · JOV</small></button>
+    <button class="tab" data-mode="po">Projeto Olímpico<small>Medalhado · Top Elite · Elite · AQ</small></button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Introduzir Marca</div>
+    <div class="info-block" id="info-block"></div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="gender">Género</label>
+        <select id="gender">
+          <option value="M">Masculino</option>
+          <option value="F">Feminino</option>
+        </select>
+      </div>
+      <div class="field" id="field-escalao">
+        <label for="escalao">Escalão</label>
+        <select id="escalao">
+          <option value="SEN">Seniores (SEN)</option>
+          <option value="SUB23">Sub-23 (SUB23)</option>
+          <option value="PA">Promessas Aquáticas (PA)</option>
+          <option value="JUN">Juniores (JUN)</option>
+          <option value="JOV">Jovens (JOV)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="event">Prova</label>
+        <select id="event"></select>
+      </div>
+      <div class="field">
+        <label for="time">Tempo</label>
+        <input type="text" id="time" placeholder="ex: 50,12 ou 1:47,55" autocomplete="off" />
+        <span class="hint">SS,cc · MM:SS,cc · HH:MM:SS,cc</span>
+      </div>
+      <div class="field">
+        <label for="name">Nome (opcional)</label>
+        <input type="text" id="name" placeholder="Nadador(a)" autocomplete="off" />
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-eval">Avaliar Nível</button>
+      <button class="btn btn-secondary" id="btn-clear">Limpar</button>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div id="warning-box"></div>
+    <div class="level-banner bg-sub" id="level-banner">
+      <div class="level-banner-label" id="level-label">Nível Atual</div>
+      <div class="level-banner-name" id="level-name">—</div>
+      <div class="level-banner-details" id="level-details">—</div>
+      <div class="level-banner-time" id="level-time">—</div>
+    </div>
+    <div class="next-levels-title" id="next-levels-title">Distância aos Níveis</div>
+    <div class="next-levels-grid" id="next-levels"></div>
+  </div>
+
+  <div class="empty-state" id="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <div class="empty-state-text">Introduz um tempo para verificar o nível e a distância aos níveis seguintes</div>
+  </div>
+
+  <div class="footer-note">
+    PAR Natação Pura 2025–2028 · Marcas em Piscina Longa (50m)<br/>
+    Sempre que o COP altere os critérios, as tabelas serão atualizadas
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ── EVENTS ──────────────────────────────────────────────────────────────────
+var EVENTS = [
+  {id:'50L',  label:'50m Livres'},
+  {id:'100L', label:'100m Livres'},
+  {id:'200L', label:'200m Livres'},
+  {id:'400L', label:'400m Livres'},
+  {id:'800L', label:'800m Livres'},
+  {id:'1500L',label:'1500m Livres'},
+  {id:'50C',  label:'50m Costas'},
+  {id:'100C', label:'100m Costas'},
+  {id:'200C', label:'200m Costas'},
+  {id:'50B',  label:'50m Bruços'},
+  {id:'100B', label:'100m Bruços'},
+  {id:'200B', label:'200m Bruços'},
+  {id:'50M',  label:'50m Mariposa'},
+  {id:'100M', label:'100m Mariposa'},
+  {id:'200M', label:'200m Mariposa'},
+  {id:'200E', label:'200m Estilos'},
+  {id:'400E', label:'400m Estilos'},
+];
+
+// ── TIME HELPERS ────────────────────────────────────────────────────────────
+function parseTime(str) {
+  if (!str) return null;
+  var s = String(str).trim().replace(/\./g, ',').replace(/\s+/g, '');
+  if (!s) return null;
+  var parts = s.split(':');
+  var secs;
+  try {
+    if (parts.length === 1) {
+      secs = parseFloat(parts[0].replace(',', '.'));
+    } else if (parts.length === 2) {
+      secs = parseInt(parts[0], 10) * 60 + parseFloat(parts[1].replace(',', '.'));
+    } else if (parts.length === 3) {
+      secs = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseFloat(parts[2].replace(',', '.'));
+    } else { return null; }
+    if (isNaN(secs) || secs <= 0) return null;
+    return secs;
+  } catch (e) { return null; }
+}
+
+function secondsToTime(secs) {
+  if (secs == null || isNaN(secs)) return '—';
+  var sign = secs < 0 ? '-' : '';
+  secs = Math.abs(secs);
+  var hours = Math.floor(secs / 3600);
+  var mins = Math.floor((secs % 3600) / 60);
+  var s = secs % 60;
+  var sStr = s.toFixed(2).replace('.', ',').padStart(5, '0');
+  if (hours > 0) return sign + hours + ':' + String(mins).padStart(2,'0') + ':' + sStr;
+  if (mins > 0)  return sign + mins + ':' + sStr;
+  return sign + s.toFixed(2).replace('.', ',');
+}
+
+function fmt2(n) {
+  return n.toFixed(2).replace('.', ',');
+}
+
+// ── DATA: PROJETO OLÍMPICO (TABELA 3) ───────────────────────────────────────
+// Order: [medalhado, topElite, elite, aq28, aq27, aq26]
+var PO_M_RAW = {
+  '50L':['21,32','21,52','21,69','21,74','21,91','21,96'],
+  '100L':['47,10','47,47','47,86','47,98','48,34','48,46'],
+  '200L':['1:44,25','1:44,86','1:45,83','1:46,09','1:46,89','1:47,16'],
+  '400L':['3:42,60','3:43,99','3:45,46','3:46,02','3:47,71','3:48,28'],
+  '800L':['7:39,10','7:44,81','7:47,04','7:48,21','7:51,71','7:52,89'],
+  '1500L':['14:36,25','14:45,05','14:51,62','14:53,85','15:00,54','15:02,79'],
+  '50C':['24,17','24,40','24,53','24,59','24,78','24,84'],
+  '100C':['51,92','52,20','53,00','53,13','53,53','53,66'],
+  '200C':['1:54,25','1:54,85','1:56,05','1:56,34','1:57,21','1:57,50'],
+  '50B':['26,42','26,65','26,90','26,97','27,17','27,24'],
+  '100B':['58,58','58,94','59,27','59,42','59,86','1:00,01'],
+  '200B':['2:07,41','2:08,32','2:09,35','2:09,67','2:10,64','2:10,97'],
+  '50M':['22,67','22,77','22,95','23,01','23,18','23,24'],
+  '100M':['50,07','50,55','51,06','51,19','51,57','51,70'],
+  '200M':['1:52,64','1:54,17','1:54,69','1:54,98','1:55,84','1:56,13'],
+  '200E':['1:55,34','1:55,85','1:57,54','1:57,83','1:58,72','1:59,02'],
+  '400E':['4:07,21','4:10,27','4:11,52','4:12,15','4:14,04','4:14,68']
+};
+var PO_F_RAW = {
+  '50L':['24,02','24,23','24,56','24,62','24,81','24,87'],
+  '100L':['52,67','52,98','53,60','53,73','54,14','54,28'],
+  '200L':['1:54,67','1:55,20','1:56,43','1:56,72','1:57,59','1:57,88'],
+  '400L':['3:58,21','4:02,90','4:06,27','4:06,89','4:08,73','4:09,35'],
+  '800L':['8:05,98','8:19,67','8:26,71','8:27,98','8:31,78','8:33,06'],
+  '1500L':['15:39,14','15:58,53','16:08,65','16:11,07','16:18,34','16:20,79'],
+  '50C':['27,13','27,36','27,56','27,63','27,84','27,91'],
+  '100C':['58,13','58,93','59,49','59,64','1:00,08','1:00,23'],
+  '200C':['2:05,09','2:07,91','2:08,95','2:09,27','2:10,24','2:10,57'],
+  '50B':['29,84','30,11','30,48','30,56','30,78','30,86'],
+  '100B':['1:05,36','1:05,81','1:06,10','1:06,27','1:06,76','1:06,93'],
+  '200B':['2:21,86','2:23,40','2:23,49','2:23,85','2:24,92','2:25,28'],
+  '50M':['25,32','25,43','25,63','25,69','25,89','25,95'],
+  '100M':['56,18','56,47','57,38','57,52','57,95','58,09'],
+  '200M':['2:05,20','2:06,86','2:08,15','2:08,47','2:09,43','2:09,75'],
+  '200E':['2:07,85','2:08,78','2:09,90','2:10,22','2:11,20','2:11,53'],
+  '400E':['4:33,26','4:34,59','4:37,33','4:38,02','4:40,10','4:40,80']
+};
+var PO_LEVELS = [
+  {id:'medalhado', name:'Medalhado', cls:'medalhado'},
+  {id:'topElite',  name:'Top Elite', cls:'topElite'},
+  {id:'elite',     name:'Elite',     cls:'elite'},
+  {id:'aq28',      name:'AQ28',      cls:'aq28'},
+  {id:'aq27',      name:'AQ27',      cls:'aq27'},
+  {id:'aq26',      name:'AQ26',      cls:'aq26'}
+];
+
+// ── DATA: PAR-PL ─────────────────────────────────────────────────────────────
+// Order: [JO28, SEN-A, SEN-B, SUB23-A, SEN-C, SUB23-B, SUB23-C, PA-SUB23, JUN-A, JUN-B, JUN-C, PA-JUN, JOV-A, JOV-B, JOV-C, PA-JOV]
+//          0     1      2      3        4      5        6        7        8      9      10     11      12     13     14     15
+var PARPL_M_RAW = {
+  '50L':['21,69','22,02','22,20','22,29','22,38','22,47','22,66','22,85','23,06','23,27','23,48','23,60','23,71','23,94','24,19','24,44'],
+  '100L':['47,86','48,58','48,96','49,15','49,35','49,55','49,96','50,38','50,82','51,27','51,74','51,98','52,23','52,73','53,26','53,81'],
+  '200L':['1:45,83','1:47,45','1:48,31','1:48,74','1:49,18','1:49,63','1:50,56','1:51,51','1:52,50','1:53,53','1:54,59','1:55,13','1:55,69','1:56,84','1:58,03','1:59,28'],
+  '400L':['3:45,46','3:48,79','3:50,53','3:51,42','3:52,32','3:53,24','3:55,12','3:57,07','3:59,07','4:01,15','4:03,31','4:04,41','4:05,54','4:07,86','4:10,26','4:12,77'],
+  '800L':['7:47,04','7:54,11','7:57,82','7:59,71','8:01,64','8:03,59','8:07,60','8:11,75','8:16,04','8:20,49','8:25,10','8:27,47','8:29,88','8:34,85','8:40,02','8:45,41'],
+  '1500L':['14:51,62','15:04,77','15:11,64','15:15,15','15:18,72','15:22,35','15:29,78','15:37,45','15:45,38','15:53,59','16:02,09','16:06,46','16:10,91','16:20,05','16:29,55','16:39,43'],
+  '50C':['24,53','24,91','25,11','25,21','25,32','25,42','25,64','25,86','26,10','26,34','26,59','26,72','26,85','27,12','27,40','27,69'],
+  '100C':['53,00','53,79','54,20','54,41','54,63','54,84','55,29','55,75','56,23','56,72','57,23','57,50','57,76','58,31','58,89','59,48'],
+  '200C':['1:56,05','1:57,83','1:58,76','1:59,24','1:59,72','2:00,21','2:01,22','2:02,27','2:03,35','2:04,47','2:05,63','2:06,23','2:06,84','2:08,10','2:09,40','2:10,76'],
+  '50B':['26,90','27,31','27,53','27,64','27,75','27,86','28,10','28,34','28,59','28,85','29,12','29,26','29,40','29,69','29,99','30,31'],
+  '100B':['59,27','1:00,19','1:00,68','1:00,92','1:01,17','1:01,43','1:01,95','1:02,50','1:03,06','1:03,64','1:04,25','1:04,56','1:04,88','1:05,53','1:06,22','1:06,93'],
+  '200B':['2:09,35','2:11,30','2:12,31','2:12,84','2:13,37','2:13,90','2:15,01','2:16,15','2:17,33','2:18,55','2:19,81','2:20,46','2:21,13','2:22,49','2:23,91','2:25,39'],
+  '50M':['22,95','23,30','23,48','23,57','23,66','23,76','23,95','24,15','24,36','24,58','24,80','24,92','25,04','25,28','25,53','25,79'],
+  '100M':['51,06','51,83','52,24','52,44','52,65','52,87','53,30','53,76','54,23','54,71','55,21','55,47','55,74','56,28','56,84','57,43'],
+  '200M':['1:54,69','1:56,46','1:57,39','1:57,86','1:58,35','1:58,84','1:59,84','2:00,88','2:01,96','2:03,08','2:04,24','2:04,84','2:05,45','2:06,70','2:08,01','2:09,37'],
+  '200E':['1:57,54','1:59,37','2:00,34','2:00,83','2:01,33','2:01,84','2:02,88','2:03,96','2:05,08','2:06,24','2:07,45','2:08,07','2:08,70','2:10,01','2:11,37','2:12,78'],
+  '400E':['4:11,52','4:15,38','4:17,40','4:18,43','4:19,48','4:20,55','4:22,74','4:25,01','4:27,35','4:29,79','4:32,31','4:33,61','4:34,93','4:37,65','4:40,49','4:43,44']
+};
+var PARPL_F_RAW = {
+  '50L':['24,56','24,94','25,14','25,24','25,34','25,45','25,67','25,89','26,12','26,36','26,61','26,74','26,87','27,14','27,42','27,71'],
+  '100L':['53,60','54,42','54,85','55,07','55,29','55,52','55,99','56,47','56,97','57,48','58,02','58,30','58,58','59,16','59,76','1:00,39'],
+  '200L':['1:56,43','1:58,22','1:59,15','1:59,63','2:00,12','2:00,61','2:01,63','2:02,68','2:03,77','2:04,89','2:06,06','2:06,66','2:07,28','2:08,54','2:09,85','2:11,22'],
+  '400L':['4:06,27','4:10,21','4:12,28','4:13,34','4:14,42','4:15,52','4:17,77','4:20,10','4:22,52','4:25,03','4:27,65','4:28,99','4:30,36','4:33,20','4:36,15','4:39,24'],
+  '800L':['8:26,71','8:34,70','8:38,89','8:41,04','8:43,22','8:45,44','8:50,00','8:54,72','8:59,61','9:04,69','9:09,96','9:12,67','9:15,44','9:21,15','9:27,10','9:33,31'],
+  '1500L':['16:08,65','16:24,19','16:32,34','16:36,52','16:40,77','16:45,09','16:53,97','17:03,17','17:12,72','17:22,63','17:32,93','17:38,23','17:43,65','17:54,82','18:06,48','18:18,66'],
+  '50C':['27,56','27,97','28,18','28,29','28,40','28,52','28,75','28,99','29,23','29,49','29,75','29,89','30,03','30,31','30,61','30,92'],
+  '100C':['59,49','1:00,41','1:00,90','1:01,15','1:01,40','1:01,65','1:02,18','1:02,72','1:03,29','1:03,87','1:04,48','1:04,79','1:05,11','1:05,76','1:06,44','1:07,16'],
+  '200C':['2:08,95','2:10,99','2:12,06','2:12,60','2:13,16','2:13,73','2:14,89','2:16,09','2:17,34','2:18,63','2:19,98','2:20,67','2:21,37','2:22,83','2:24,35','2:25,93'],
+  '50B':['30,48','30,96','31,21','31,34','31,47','31,60','31,87','32,16','32,45','32,75','33,07','33,23','33,40','33,74','34,09','34,47'],
+  '100B':['1:06,10','1:07,09','1:07,61','1:07,88','1:08,15','1:08,43','1:08,99','1:09,57','1:10,17','1:10,80','1:11,44','1:11,78','1:12,12','1:12,81','1:13,54','1:14,29'],
+  '200B':['2:23,49','2:25,73','2:26,90','2:27,51','2:28,12','2:28,74','2:30,01','2:31,33','2:32,70','2:34,12','2:35,59','2:36,35','2:37,13','2:38,72','2:40,38','2:42,11'],
+  '50M':['25,63','26,04','26,25','26,36','26,47','26,58','26,82','27,06','27,31','27,57','27,84','27,97','28,12','28,41','28,71','29,03'],
+  '100M':['57,38','58,30','58,78','59,02','59,27','59,53','1:00,05','1:00,60','1:01,16','1:01,74','1:02,35','1:02,66','1:02,98','1:03,64','1:04,32','1:05,04'],
+  '200M':['2:08,15','2:10,20','2:11,28','2:11,83','2:12,40','2:12,97','2:14,14','2:15,36','2:16,62','2:17,93','2:19,29','2:19,99','2:20,71','2:22,18','2:23,72','2:25,33'],
+  '200E':['2:09,90','2:11,87','2:12,90','2:13,43','2:13,96','2:14,51','2:15,63','2:16,78','2:17,98','2:19,22','2:20,50','2:21,16','2:21,83','2:23,22','2:24,66','2:26,16'],
+  '400E':['4:37,33','4:41,77','4:44,10','4:45,30','4:46,51','4:47,75','4:50,29','4:52,92','4:55,65','4:58,48','5:01,42','5:02,94','5:04,49','5:07,68','5:11,01','5:14,49']
+};
+
+var ESCALOES = {
+  SEN: {
+    label:'Seniores',
+    levels:[
+      {id:'sen-a', name:'SEN-A', subtitle:'Índice 4 · −40p', idx:1, cls:'sen-a'},
+      {id:'sen-b', name:'SEN-B', subtitle:'Índice 6 · −60p', idx:2, cls:'sen-b'},
+      {id:'sen-c', name:'SEN-C', subtitle:'Índice 8 · −80p', idx:4, cls:'sen-c'}
+    ]
+  },
+  SUB23: {
+    label:'Sub-23',
+    levels:[
+      {id:'sub23-a', name:'SUB23-A', subtitle:'Índice 7 · −70p',  idx:3, cls:'sub23-a'},
+      {id:'sub23-b', name:'SUB23-B', subtitle:'Índice 9 · −90p',  idx:5, cls:'sub23-b'},
+      {id:'sub23-c', name:'SUB23-C', subtitle:'Índice 11 · −110p', idx:6, cls:'sub23-c'}
+    ]
+  },
+  PA: {
+    label:'Promessas Aquáticas',
+    levels:[
+      {id:'pa-sub23', name:'PA-SUB23', subtitle:'Índice 13 · −130p', idx:7,  cls:'pa-sub23'},
+      {id:'pa-jun',   name:'PA-JUN',   subtitle:'Índice 20 · −200p', idx:11, cls:'pa-jun'},
+      {id:'pa-jov',   name:'PA-JOV',   subtitle:'Índice 27 · −270p', idx:15, cls:'pa-jov'}
+    ]
+  },
+  JUN: {
+    label:'Juniores',
+    levels:[
+      {id:'jun-a', name:'JUN-A', subtitle:'Índice 15 · −150p', idx:8,  cls:'jun-a'},
+      {id:'jun-b', name:'JUN-B', subtitle:'Índice 17 · −170p', idx:9,  cls:'jun-b'},
+      {id:'jun-c', name:'JUN-C', subtitle:'Índice 19 · −190p', idx:10, cls:'jun-c'}
+    ]
+  },
+  JOV: {
+    label:'Jovens',
+    levels:[
+      {id:'jov-a', name:'JOV-A', subtitle:'Índice 21 · −210p', idx:12, cls:'jov-a'},
+      {id:'jov-b', name:'JOV-B', subtitle:'Índice 23 · −230p', idx:13, cls:'jov-b'},
+      {id:'jov-c', name:'JOV-C', subtitle:'Índice 25 · −250p', idx:14, cls:'jov-c'}
+    ]
+  }
+};
+
+// ── PARSE TIMES ──────────────────────────────────────────────────────────────
+var PARPL = { M:{}, F:{} };
+var PO    = { M:{}, F:{} };
+for (var i = 0; i < EVENTS.length; i++) {
+  var ev = EVENTS[i];
+  PARPL.M[ev.id] = PARPL_M_RAW[ev.id].map(parseTime);
+  PARPL.F[ev.id] = PARPL_F_RAW[ev.id].map(parseTime);
+  PO.M[ev.id]    = PO_M_RAW[ev.id].map(parseTime);
+  PO.F[ev.id]    = PO_F_RAW[ev.id].map(parseTime);
+}
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+var currentMode = 'par-pl';
+
+// Populate event select
+var eventSelect = document.getElementById('event');
+for (var j = 0; j < EVENTS.length; j++) {
+  var opt = document.createElement('option');
+  opt.value = EVENTS[j].id;
+  opt.textContent = EVENTS[j].label;
+  eventSelect.appendChild(opt);
+}
+
+// Tabs
+var tabs = document.querySelectorAll('.tab');
+tabs.forEach(function(tab){
+  tab.addEventListener('click', function(){
+    tabs.forEach(function(tt){ tt.classList.remove('active'); });
+    tab.classList.add('active');
+    currentMode = tab.getAttribute('data-mode');
+    updateUIForMode();
+    document.getElementById('results').classList.remove('show');
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('warning-box').innerHTML = '';
+  });
+});
+
+function updateUIForMode() {
+  var escalaoField = document.getElementById('field-escalao');
+  var infoBlock = document.getElementById('info-block');
+  if (currentMode === 'par-pl') {
+    escalaoField.style.display = '';
+    infoBlock.innerHTML = '<strong>PAR Piscina Longa:</strong> escolhe o escalão (Seniores, Sub-23, PA, Juniores ou Jovens) e a app verifica em que índice estás (A/B/C) e a tua distância aos outros índices, incluindo o referencial JO28.';
+  } else {
+    escalaoField.style.display = 'none';
+    infoBlock.innerHTML = '<strong>Projeto Olímpico:</strong> verifica se atinges algum dos 6 níveis de apoio para os JO Los Angeles 2028 — Medalhado, Top Elite, Elite, AQ28, AQ27 ou AQ26 (Apoio à Qualificação por data-limite).';
+  }
+}
+
+// ── EVALUATION ───────────────────────────────────────────────────────────────
+function evaluate() {
+  var gender = document.getElementById('gender').value;
+  var eventId = document.getElementById('event').value;
+  var timeStr = document.getElementById('time').value;
+  var name = document.getElementById('name').value.trim();
+  var warningBox = document.getElementById('warning-box');
+  warningBox.innerHTML = '';
+
+  var userSecs = parseTime(timeStr);
+  if (userSecs == null) {
+    warningBox.innerHTML = '<div class="warning">⚠ Tempo inválido. Usa SS,cc · MM:SS,cc · HH:MM:SS,cc (ex: 50,12 · 1:47,55).</div>';
+    document.getElementById('results').classList.add('show');
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('level-banner').className = 'level-banner bg-sub';
+    document.getElementById('level-label').textContent = '—';
+    document.getElementById('level-name').textContent = '—';
+    document.getElementById('level-details').textContent = '—';
+    document.getElementById('level-time').textContent = '—';
+    document.getElementById('next-levels').innerHTML = '';
+    return;
+  }
+
+  var ev = null;
+  for (var k = 0; k < EVENTS.length; k++) { if (EVENTS[k].id === eventId) { ev = EVENTS[k]; break; } }
+
+  if (currentMode === 'par-pl') {
+    evaluateParPl(gender, eventId, userSecs, ev, name);
+  } else {
+    evaluatePO(gender, eventId, userSecs, ev, name);
+  }
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('empty-state').style.display = 'none';
+}
+
+function buildLevelCard(lvl, lvlTime, userSecs, isCurrent) {
+  var achieved = userSecs <= lvlTime;
+  var card = document.createElement('div');
+  card.className = 'next-level-card border-' + lvl.cls + (achieved ? ' achieved' : '') + (isCurrent ? ' current' : '');
+
+  var gapTime, gapPct, barWidth;
+  if (achieved) {
+    var margin = lvlTime - userSecs;
+    gapTime = '−' + fmt2(margin) + ' s';
+    gapPct = fmt2(margin / lvlTime * 100) + '% abaixo do mínimo';
+    barWidth = 100;
+  } else {
+    var need = userSecs - lvlTime;
+    var pct = need / lvlTime * 100;
+    gapTime = '+' + fmt2(need) + ' s';
+    gapPct = fmt2(pct) + '% acima do mínimo';
+    barWidth = Math.max(0, Math.min(100, 100 - pct * 8));
+  }
+
+  card.innerHTML =
+    '<div>' +
+      '<div class="next-level-name">' + lvl.name + (isCurrent ? '<span class="badge-current">ATUAL</span>' : '') + '</div>' +
+      '<div class="next-level-target">' + (lvl.subtitle ? lvl.subtitle + ' · ' : '') + 'Mínimo: ' + secondsToTime(lvlTime) + '</div>' +
+    '</div>' +
+    '<div class="next-level-gap">' +
+      '<div class="next-level-gap-time">' + gapTime + '</div>' +
+      '<div class="next-level-gap-pct">' + gapPct + '</div>' +
+    '</div>' +
+    '<div class="pct-bar"><div class="pct-bar-fill fill-' + lvl.cls + '" style="width: ' + barWidth + '%"></div></div>';
+  return card;
+}
+
+function evaluateParPl(gender, eventId, userSecs, ev, name) {
+  var escalaoKey = document.getElementById('escalao').value;
+  var esc = ESCALOES[escalaoKey];
+  var allTimes = PARPL[gender][eventId];
+  var jo28 = allTimes[0];
+
+  var escalaoLevels = esc.levels.map(function(lv){
+    return Object.assign({}, lv, { time: allTimes[lv.idx] });
+  });
+
+  // Find hardest achieved index (since levels are A=hardest...C=easiest)
+  var achievedIdx = -1;
+  for (var i = 0; i < escalaoLevels.length; i++) {
+    if (userSecs <= escalaoLevels[i].time) { achievedIdx = i; break; }
+  }
+
+  var banner = document.getElementById('level-banner');
+  var levelLabel = document.getElementById('level-label');
+  var levelName  = document.getElementById('level-name');
+  var levelDetails = document.getElementById('level-details');
+  var levelTime  = document.getElementById('level-time');
+
+  var nameStr = name ? (' · ' + name) : '';
+  var genderStr = gender === 'M' ? 'Masculino' : 'Feminino';
+
+  if (achievedIdx === -1) {
+    banner.className = 'level-banner bg-sub';
+    levelLabel.textContent = 'Escalão ' + esc.label + ' · ' + genderStr;
+    var last = escalaoLevels[escalaoLevels.length - 1];
+    levelName.textContent = 'Abaixo do ' + last.name;
+    levelDetails.textContent = ev.label + nameStr;
+    var gap = userSecs - last.time;
+    levelTime.innerHTML = '<strong>' + secondsToTime(userSecs) + '</strong><small>+' + fmt2(gap) + ' s para atingir o ' + last.name + ' (' + secondsToTime(last.time) + ')</small>';
+  } else {
+    var lvl = escalaoLevels[achievedIdx];
+    banner.className = 'level-banner bg-' + lvl.cls;
+    levelLabel.textContent = 'Escalão ' + esc.label + ' · ' + genderStr;
+    levelName.textContent = lvl.name;
+    levelDetails.textContent = ev.label + nameStr + ' · ' + lvl.subtitle;
+    var margin = lvl.time - userSecs;
+    levelTime.innerHTML = '<strong>' + secondsToTime(userSecs) + '</strong><small>Mínimo do índice: ' + secondsToTime(lvl.time) + ' · ' + (margin > 0 ? fmt2(margin) + ' s de margem' : 'no limite') + '</small>';
+  }
+
+  document.getElementById('next-levels-title').textContent = 'Distância aos Índices ' + esc.label.toUpperCase() + ' e ao Referencial JO28';
+  var list = document.getElementById('next-levels');
+  list.innerHTML = '';
+
+  // JO28 first (hardest reference)
+  list.appendChild(buildLevelCard(
+    {name:'Referencial JO28', subtitle:'Marca de referência olímpica', cls:'jo28'},
+    jo28, userSecs, false
+  ));
+  // Then escalão levels (A → B → C)
+  for (var n = 0; n < escalaoLevels.length; n++) {
+    var l = escalaoLevels[n];
+    var isCurrent = n === achievedIdx;
+    list.appendChild(buildLevelCard(l, l.time, userSecs, isCurrent));
+  }
+}
+
+function evaluatePO(gender, eventId, userSecs, ev, name) {
+  var times = PO[gender][eventId];
+
+  var achievedIdx = -1;
+  for (var i = 0; i < PO_LEVELS.length; i++) {
+    if (userSecs <= times[i]) { achievedIdx = i; break; }
+  }
+
+  var banner = document.getElementById('level-banner');
+  var levelLabel = document.getElementById('level-label');
+  var levelName = document.getElementById('level-name');
+  var levelDetails = document.getElementById('level-details');
+  var levelTime = document.getElementById('level-time');
+
+  var nameStr = name ? (' · ' + name) : '';
+  var genderStr = gender === 'M' ? 'Masculino' : 'Feminino';
+
+  if (achievedIdx === -1) {
+    banner.className = 'level-banner bg-sub';
+    levelLabel.textContent = 'Projeto Olímpico · ' + genderStr;
+    levelName.textContent = 'Abaixo de AQ26';
+    levelDetails.textContent = ev.label + nameStr;
+    var gap = userSecs - times[5];
+    levelTime.innerHTML = '<strong>' + secondsToTime(userSecs) + '</strong><small>+' + fmt2(gap) + ' s para AQ26 (' + secondsToTime(times[5]) + ')</small>';
+  } else {
+    var lvl = PO_LEVELS[achievedIdx];
+    banner.className = 'level-banner bg-' + lvl.cls;
+    levelLabel.textContent = 'Projeto Olímpico · ' + genderStr;
+    levelName.textContent = lvl.name;
+    levelDetails.textContent = ev.label + nameStr;
+    var margin = times[achievedIdx] - userSecs;
+    levelTime.innerHTML = '<strong>' + secondsToTime(userSecs) + '</strong><small>Mínimo: ' + secondsToTime(times[achievedIdx]) + ' · ' + (margin > 0 ? fmt2(margin) + ' s de margem' : 'no limite') + '</small>';
+  }
+
+  document.getElementById('next-levels-title').textContent = 'Distância aos Níveis do Projeto Olímpico';
+  var list = document.getElementById('next-levels');
+  list.innerHTML = '';
+  for (var m = 0; m < PO_LEVELS.length; m++) {
+    var ll = PO_LEVELS[m];
+    list.appendChild(buildLevelCard(ll, times[m], userSecs, m === achievedIdx));
+  }
+}
+
+function clearAll() {
+  document.getElementById('time').value = '';
+  document.getElementById('name').value = '';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('warning-box').innerHTML = '';
+}
+
+document.getElementById('btn-eval').addEventListener('click', evaluate);
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+document.getElementById('time').addEventListener('keypress', function(e){ if (e.key === 'Enter') evaluate(); });
+document.getElementById('name').addEventListener('keypress', function(e){ if (e.key === 'Enter') evaluate(); });
+
+updateUIForMode();
+</script>
+
+</body>
+</html>
