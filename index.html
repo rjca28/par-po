@@ -292,6 +292,76 @@
   .fill-jov-c     { background: #A86720; }
   .fill-pa-jov    { background: #854F0B; }
   .fill-jo28      { background: #C9A84C; }
+  .btn-print {
+    background: var(--gold); color: var(--navy);
+  }
+  .btn-print:hover { background: #B8973F; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-print:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* PRINT STYLES */
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body {
+      background: white !important;
+      color: #000;
+      font-size: 11pt;
+    }
+    .tabs, .card, .empty-state, .footer-note, .btn,
+    #warning-box, .header .subtitle { display: none !important; }
+    .header {
+      background: none !important;
+      color: var(--navy) !important;
+      padding: 0 0 8px 0 !important;
+      box-shadow: none !important;
+      border-bottom: 2px solid var(--gold);
+      margin-bottom: 14px;
+    }
+    .header::before { display: none !important; }
+    .header h1 { font-size: 16pt; color: var(--navy) !important; }
+    .badge-gold {
+      background: none !important; color: var(--gray-700) !important;
+      padding: 0; margin-left: 6px; font-size: 11pt;
+    }
+    .container { padding: 0 !important; max-width: 100% !important; }
+    .results { display: block !important; }
+    .results:not(.show) { display: none !important; }
+    .level-banner {
+      box-shadow: none !important;
+      border: 1.5px solid #999;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      page-break-inside: avoid;
+    }
+    .level-banner::before { display: none !important; }
+    .next-levels-title { color: #000 !important; margin-top: 8px; }
+    .next-level-card {
+      box-shadow: none !important;
+      border: 1px solid #CBD5E1;
+      border-left-width: 4px;
+      page-break-inside: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .pct-bar, .pct-bar-fill {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .badge-current {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-footer {
+      display: block !important;
+      margin-top: 16px;
+      padding-top: 8px;
+      border-top: 1px solid #CBD5E1;
+      font-size: 8.5pt;
+      color: #555;
+      text-align: center;
+    }
+  }
+  .print-footer { display: none; }
+
 </style>
 </head>
 <body>
@@ -347,6 +417,7 @@
     </div>
     <div class="actions">
       <button class="btn btn-primary" id="btn-eval">Avaliar Nível</button>
+      <button class="btn btn-print" id="btn-print">🖨 Imprimir / PDF</button>
       <button class="btn btn-secondary" id="btn-clear">Limpar</button>
     </div>
   </div>
@@ -361,6 +432,7 @@
     </div>
     <div class="next-levels-title" id="next-levels-title">Distância aos Níveis</div>
     <div class="next-levels-grid" id="next-levels"></div>
+    <div class="print-footer" id="print-footer"></div>
   </div>
 
   <div class="empty-state" id="empty-state">
@@ -638,6 +710,7 @@ function evaluate() {
     document.getElementById('level-details').textContent = '—';
     document.getElementById('level-time').textContent = '—';
     document.getElementById('next-levels').innerHTML = '';
+    document.getElementById('btn-print').disabled = true;
     return;
   }
 
@@ -649,6 +722,14 @@ function evaluate() {
   } else {
     evaluatePO(gender, eventId, userSecs, ev, name);
   }
+
+  // Enable print and fill the print-only footer
+  document.getElementById('btn-print').disabled = false;
+  var modeLabel = currentMode === 'par-pl' ? 'PAR Piscina Longa' : 'Projeto Olímpico';
+  var now = new Date();
+  var dateStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  document.getElementById('print-footer').innerHTML =
+    'FPN · PAR Natação Pura 2025–2028 · ' + modeLabel + ' · Marcas em Piscina Longa (50m) · Documento gerado a ' + dateStr;
 
   document.getElementById('results').classList.add('show');
   document.getElementById('empty-state').style.display = 'none';
@@ -795,10 +876,17 @@ function clearAll() {
   document.getElementById('results').classList.remove('show');
   document.getElementById('empty-state').style.display = 'block';
   document.getElementById('warning-box').innerHTML = '';
+  document.getElementById('btn-print').disabled = true;
 }
 
 document.getElementById('btn-eval').addEventListener('click', evaluate);
 document.getElementById('btn-clear').addEventListener('click', clearAll);
+
+var btnPrint = document.getElementById('btn-print');
+btnPrint.disabled = true;
+btnPrint.addEventListener('click', function(){
+  window.print();
+});
 document.getElementById('time').addEventListener('keypress', function(e){ if (e.key === 'Enter') evaluate(); });
 document.getElementById('name').addEventListener('keypress', function(e){ if (e.key === 'Enter') evaluate(); });
 
