@@ -630,7 +630,7 @@
     <div class="card excel-toolbar-card">
       <div class="card-title">Importar Folha de Resultados</div>
       <div class="info-block">
-        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong> (uma aba por prova). A app avalia todas as marcas de cada nadador e apresenta <strong>apenas o nível mais exigente atingido por cada um</strong>, em função da idade/escalão. Nadadores sem qualquer nível não são apresentados. Tudo é processado no teu dispositivo.
+        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong>. No modo <strong>Automático por idade</strong>, cada nadador só pode receber níveis do seu escalão ou superiores (15-16 → JOV/PA-JOV e acima · 17-18 → JUN/PA-JUN e acima · 19-23 → SUB23/PA-SUB23 e acima · +23 → apenas SEN), calculado pelo ano de nascimento. Apresenta-se <strong>apenas o nível mais exigente</strong> de cada nadador; quem não atinge nenhum não aparece.
       </div>
       <div class="excel-drop" id="excel-drop">
         <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" />
@@ -650,7 +650,7 @@
           <div class="field" id="excel-field-escalao">
             <label for="excel-escalao">Escalão (PAR-PL)</label>
             <select id="excel-escalao">
-              <option value="AUTO">Automático (pelo escalão do nadador)</option>
+              <option value="AUTO">Automático por idade (regra de escalão)</option>
               <option value="SEN">Forçar Seniores</option>
               <option value="SUB23">Forçar Sub-23</option>
               <option value="PA">Forçar Promessas Aquáticas</option>
@@ -1394,14 +1394,75 @@ function resolvePOLevel(gender, eventId, userSecs) {
   return { levelName: PO_LEVELS[achievedIdx].name, levelCls: PO_LEVELS[achievedIdx].cls, target: times[achievedIdx], achieved: true, strength: PO_LEVELS.length - achievedIdx };
 }
 
-// Determine PAR escalão automatically from birth year (época 2025/2026)
-// SEN: 2007 e + velhos · SUB23: 2003 e + novos · JUN: 2008 · JOV: 2010/2011 · senão SEN
-function autoEscalaoFromBirth(birthYear) {
-  if (!birthYear) return 'SEN';
-  if (birthYear <= 2007) return 'SEN';
-  if (birthYear === 2008 || birthYear === 2009) return 'JUN';
-  if (birthYear === 2010 || birthYear === 2011) return 'JOV';
-  return 'JOV';
+// ── PAR-PL LADDER (todos os índices ordenados do mais exigente ao menos) ──────
+// Cada entrada: name, cls, indice, idx (posição na tabela), grupo (SEN/SUB23/JUN/JOV + PA)
+var PARPL_LADDER = [
+  {name:'SEN-A',    cls:'sen-a',    indice:4,  idx:1,  grupo:'SEN'},
+  {name:'SEN-B',    cls:'sen-b',    indice:6,  idx:2,  grupo:'SEN'},
+  {name:'SUB23-A',  cls:'sub23-a',  indice:7,  idx:3,  grupo:'SUB23'},
+  {name:'SEN-C',    cls:'sen-c',    indice:8,  idx:4,  grupo:'SEN'},
+  {name:'SUB23-B',  cls:'sub23-b',  indice:9,  idx:5,  grupo:'SUB23'},
+  {name:'SUB23-C',  cls:'sub23-c',  indice:11, idx:6,  grupo:'SUB23'},
+  {name:'PA-SUB23', cls:'pa-sub23', indice:13, idx:7,  grupo:'PA-SUB23'},
+  {name:'JUN-A',    cls:'jun-a',    indice:15, idx:8,  grupo:'JUN'},
+  {name:'JUN-B',    cls:'jun-b',    indice:17, idx:9,  grupo:'JUN'},
+  {name:'JUN-C',    cls:'jun-c',    indice:19, idx:10, grupo:'JUN'},
+  {name:'PA-JUN',   cls:'pa-jun',   indice:20, idx:11, grupo:'PA-JUN'},
+  {name:'JOV-A',    cls:'jov-a',    indice:21, idx:12, grupo:'JOV'},
+  {name:'JOV-B',    cls:'jov-b',    indice:23, idx:13, grupo:'JOV'},
+  {name:'JOV-C',    cls:'jov-c',    indice:25, idx:14, grupo:'JOV'},
+  {name:'PA-JOV',   cls:'pa-jov',   indice:27, idx:15, grupo:'PA-JOV'}
+];
+
+// Idade na época 2025/2026 → categoria + índice máximo (ladder index) permitido como "piso"
+// 15-16 (2010-2011): pode JOV/PA-JOV e acima → piso = PA-JOV (último da ladder)
+// 17-18 (2008-2009): pode JUN/PA-JUN e acima → exclui JOV → piso = PA-JUN
+// 19-23 (2003-2007): pode SUB23/PA-SUB23 e acima → exclui JUN/JOV → piso = PA-SUB23
+// +23  (≤2002):      apenas SEN (A/B/C) → piso = SEN-C, e só grupos SEN
+function ageRuleFromBirth(birthYear) {
+  if (!birthYear) return null;
+  var age = 2026 - birthYear; // época 2025/2026
+  if (birthYear >= 2010) {
+    // 15-16 (e mais novos): toda a ladder disponível
+    return { cat:'Jovens (15-16)', maxLadderIdx: PARPL_LADDER.length - 1, onlySen:false };
+  }
+  if (birthYear === 2008 || birthYear === 2009) {
+    // 17-18: até PA-JUN (índice 11 na tabela). Encontrar posição na ladder.
+    return { cat:'Juniores (17-18)', maxLadderIdx: ladderPos('PA-JUN'), onlySen:false };
+  }
+  if (birthYear >= 2003 && birthYear <= 2007) {
+    // 19-23: até PA-SUB23
+    return { cat:'Sub-23 (19-23)', maxLadderIdx: ladderPos('PA-SUB23'), onlySen:false };
+  }
+  // ≤2002 (>23): apenas SEN
+  return { cat:'Seniores (>23)', maxLadderIdx: ladderPos('SEN-C'), onlySen:true };
+}
+
+function ladderPos(name) {
+  for (var i = 0; i < PARPL_LADDER.length; i++) { if (PARPL_LADDER[i].name === name) return i; }
+  return PARPL_LADDER.length - 1;
+}
+
+// Resolve o melhor nível PAR-PL permitido pela idade, para uma marca.
+// Avalia do mais exigente (topo da ladder) até ao piso permitido pela idade.
+function resolveParPlByAge(gender, eventId, userSecs, birthYear) {
+  var allTimes = PARPL[gender][eventId];
+  if (!allTimes) return null;
+  var rule = ageRuleFromBirth(birthYear);
+  if (!rule) return null;
+
+  for (var i = 0; i <= rule.maxLadderIdx; i++) {
+    var lv = PARPL_LADDER[i];
+    if (rule.onlySen && lv.grupo !== 'SEN') continue; // >23 só pode SEN
+    var target = allTimes[lv.idx];
+    if (userSecs <= target) {
+      return {
+        levelName: lv.name, levelCls: lv.cls, target: target,
+        achieved: true, strength: 300 - lv.indice, cat: rule.cat
+      };
+    }
+  }
+  return null; // sem nível permitido
 }
 
 function getBirthYear(val) {
@@ -1563,9 +1624,14 @@ function processExcel() {
 
     var res, ctx, escKey;
     if (mode === 'par-pl') {
-      escKey = (escalaoOpt === 'AUTO') ? autoEscalaoFromBirth(d.birthYear) : escalaoOpt;
-      res = resolveParPlLevel(d.gender, d.eventId, d.secs, escKey);
-      ctx = ESCALOES[escKey] ? ESCALOES[escKey].label : escKey;
+      if (escalaoOpt === 'AUTO') {
+        // Regra por idade: cada faixa só pode níveis do seu escalão ou acima
+        res = resolveParPlByAge(d.gender, d.eventId, d.secs, d.birthYear);
+        ctx = res ? res.cat : '';
+      } else {
+        res = resolveParPlLevel(d.gender, d.eventId, d.secs, escalaoOpt);
+        ctx = ESCALOES[escalaoOpt] ? ESCALOES[escalaoOpt].label : escalaoOpt;
+      }
     } else {
       res = resolvePOLevel(d.gender, d.eventId, d.secs);
       ctx = 'Projeto Olímpico';
