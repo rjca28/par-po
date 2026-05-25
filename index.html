@@ -306,7 +306,7 @@
       color: #000;
       font-size: 11pt;
     }
-    .tabs, .card, .empty-state, .footer-note, .btn,
+    .tabs, .footer-note, .btn,
     #warning-box, .header .subtitle { display: none !important; }
     .header {
       background: none !important;
@@ -323,8 +323,31 @@
       padding: 0; margin-left: 6px; font-size: 11pt;
     }
     .container { padding: 0 !important; max-width: 100% !important; }
-    .results { display: block !important; }
-    .results:not(.show) { display: none !important; }
+
+    /* When printing the consulta view */
+    body.print-consulta #view-historico { display: none !important; }
+    body.print-consulta .card, body.print-consulta .empty-state { display: none !important; }
+    body.print-consulta .results { display: block !important; }
+    body.print-consulta .results:not(.show) { display: none !important; }
+
+    /* When printing the histórico view */
+    body.print-hist #view-consulta { display: none !important; }
+    body.print-hist .hist-toolbar-card { display: none !important; }
+    body.print-hist .empty-state { display: none !important; }
+    body.print-hist .hist-print-header {
+      display: block !important;
+      font-size: 14pt; font-weight: 800; color: var(--navy);
+      margin-bottom: 4px;
+    }
+    body.print-hist .hist-print-footer {
+      display: block !important;
+      margin-top: 16px; padding-top: 8px;
+      border-top: 1px solid #CBD5E1;
+      font-size: 8.5pt; color: #555; text-align: center;
+    }
+    body.print-hist .hist-del { display: none !important; }
+    body.print-hist .hist-time { display: table-cell; }
+
     .level-banner {
       box-shadow: none !important;
       border: 1.5px solid #999;
@@ -342,11 +365,14 @@
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .pct-bar, .pct-bar-fill {
+    .hist-item {
+      box-shadow: none !important;
+      border: 1px solid #CBD5E1;
+      border-left-width: 5px;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .badge-current {
+    .pct-bar, .pct-bar-fill, .badge-current, .hist-badge {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -361,6 +387,78 @@
     }
   }
   .print-footer { display: none; }
+
+  /* HISTÓRICO */
+  .btn-danger { background: #FEE2E2; color: #991B1B; }
+  .btn-danger:hover { background: #FECACA; }
+  .hist-controls {
+    display: flex; justify-content: space-between;
+    align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .hist-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 14px; border: 1.5px solid var(--gray-200);
+    background: var(--gray-50); color: var(--gray-700);
+    border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .chip:hover { border-color: var(--blue); color: var(--navy); }
+  .chip.active {
+    background: var(--navy); color: white; border-color: var(--navy);
+  }
+  .hist-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hist-item {
+    background: white; border-radius: 12px; box-shadow: var(--shadow-sm);
+    border-left: 5px solid var(--gray-300);
+    padding: 14px 18px; margin-bottom: 10px;
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    align-items: center; gap: 14px; transition: all 0.15s;
+    page-break-inside: avoid;
+  }
+  .hist-item:hover { box-shadow: var(--shadow-md); }
+  .hist-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 8px;
+    font-size: 13px; font-weight: 800; color: white;
+    white-space: nowrap; min-width: 78px; text-align: center;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .hist-info { min-width: 0; }
+  .hist-info-main {
+    font-size: 14px; font-weight: 700; color: var(--gray-900);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hist-info-sub {
+    font-size: 11.5px; color: var(--gray-500); margin-top: 2px;
+  }
+  .hist-mode-tag {
+    display: inline-block; font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.04em; padding: 1px 6px; border-radius: 6px;
+    background: var(--gray-100); color: var(--gray-700);
+    margin-left: 6px; vertical-align: middle;
+  }
+  .hist-time {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .hist-time-val { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+  .hist-time-date { font-size: 10.5px; color: var(--gray-500); margin-top: 2px; }
+  .hist-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--gray-300); font-size: 18px; padding: 4px 6px;
+    border-radius: 6px; transition: all 0.15s; line-height: 1;
+  }
+  .hist-del:hover { color: #991B1B; background: #FEE2E2; }
+  .hist-print-header, .hist-print-footer { display: none; }
+
+  @media (max-width: 600px) {
+    .hist-item {
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+    }
+    .hist-time { display: none; }
+    .hist-controls { flex-direction: column; align-items: stretch; }
+    .hist-actions { justify-content: stretch; }
+    .hist-actions .btn { flex: 1; }
+  }
 
 </style>
 </head>
@@ -378,8 +476,11 @@
   <div class="tabs">
     <button class="tab active" data-mode="par-pl">PAR Piscina Longa<small>SEN · SUB23 · PA · JUN · JOV</small></button>
     <button class="tab" data-mode="po">Projeto Olímpico<small>Medalhado · Top Elite · Elite · AQ</small></button>
+    <button class="tab" data-mode="hist">Histórico<small>Consultas guardadas</small></button>
   </div>
 
+  <!-- ===== VIEW: CONSULTA (par-pl / po) ===== -->
+  <div id="view-consulta">
   <div class="card">
     <div class="card-title">Introduzir Marca</div>
     <div class="info-block" id="info-block"></div>
@@ -438,6 +539,34 @@
   <div class="empty-state" id="empty-state">
     <div class="empty-state-icon">📊</div>
     <div class="empty-state-text">Introduz um tempo para verificar o nível e a distância aos níveis seguintes</div>
+  </div>
+  </div>
+
+  <!-- ===== VIEW: HISTÓRICO ===== -->
+  <div id="view-historico" style="display:none">
+    <div class="card hist-toolbar-card">
+      <div class="card-title">Histórico de Consultas</div>
+      <div class="info-block">As consultas avaliadas são guardadas automaticamente. Podes filtrar por tipo, imprimir a listagem em PDF e limpar tudo.</div>
+      <div class="hist-controls">
+        <div class="hist-filter">
+          <button class="chip active" data-filter="all">Todas</button>
+          <button class="chip" data-filter="par-pl">PAR Piscina Longa</button>
+          <button class="chip" data-filter="po">Projeto Olímpico</button>
+        </div>
+        <div class="hist-actions">
+          <button class="btn btn-print" id="btn-hist-print">🖨 Imprimir / PDF</button>
+          <button class="btn btn-danger" id="btn-hist-reset">🗑 Limpar Histórico</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hist-print-header" id="hist-print-header"></div>
+    <div id="hist-list"></div>
+    <div class="empty-state" id="hist-empty">
+      <div class="empty-state-icon">🗂</div>
+      <div class="empty-state-text">Ainda não há consultas guardadas.<br/>Avalia um tempo no separador PAR ou Projeto Olímpico.</div>
+    </div>
+    <div class="print-footer" id="hist-print-footer"></div>
   </div>
 
   <div class="footer-note">
@@ -672,15 +801,30 @@ tabs.forEach(function(tab){
     tab.classList.add('active');
     currentMode = tab.getAttribute('data-mode');
     updateUIForMode();
-    document.getElementById('results').classList.remove('show');
-    document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('warning-box').innerHTML = '';
   });
 });
 
 function updateUIForMode() {
+  var viewConsulta = document.getElementById('view-consulta');
+  var viewHist = document.getElementById('view-historico');
   var escalaoField = document.getElementById('field-escalao');
   var infoBlock = document.getElementById('info-block');
+
+  if (currentMode === 'hist') {
+    viewConsulta.style.display = 'none';
+    viewHist.style.display = 'block';
+    renderHistory();
+    return;
+  }
+
+  viewConsulta.style.display = 'block';
+  viewHist.style.display = 'none';
+  // reset consulta result area on mode switch between par-pl / po
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('warning-box').innerHTML = '';
+  document.getElementById('btn-print').disabled = true;
+
   if (currentMode === 'par-pl') {
     escalaoField.style.display = '';
     infoBlock.innerHTML = '<strong>PAR Piscina Longa:</strong> escolhe o escalão (Seniores, Sub-23, PA, Juniores ou Jovens) e a app verifica em que índice estás (A/B/C) e a tua distância aos outros índices, incluindo o referencial JO28.';
@@ -717,10 +861,11 @@ function evaluate() {
   var ev = null;
   for (var k = 0; k < EVENTS.length; k++) { if (EVENTS[k].id === eventId) { ev = EVENTS[k]; break; } }
 
+  var summary;
   if (currentMode === 'par-pl') {
-    evaluateParPl(gender, eventId, userSecs, ev, name);
+    summary = evaluateParPl(gender, eventId, userSecs, ev, name);
   } else {
-    evaluatePO(gender, eventId, userSecs, ev, name);
+    summary = evaluatePO(gender, eventId, userSecs, ev, name);
   }
 
   // Enable print and fill the print-only footer
@@ -730,6 +875,21 @@ function evaluate() {
   var dateStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
   document.getElementById('print-footer').innerHTML =
     'FPN · PAR Natação Pura 2025–2028 · ' + modeLabel + ' · Marcas em Piscina Longa (50m) · Documento gerado a ' + dateStr;
+
+  // Record to history
+  recordHistory({
+    mode: currentMode,
+    modeLabel: modeLabel,
+    gender: gender,
+    genderLabel: gender === 'M' ? 'Masculino' : 'Feminino',
+    eventLabel: ev.label,
+    timeStr: secondsToTime(userSecs),
+    name: name,
+    context: summary.context,
+    levelName: summary.levelName,
+    levelCls: summary.levelCls,
+    ts: now.getTime()
+  });
 
   document.getElementById('results').classList.add('show');
   document.getElementById('empty-state').style.display = 'none';
@@ -825,6 +985,13 @@ function evaluateParPl(gender, eventId, userSecs, ev, name) {
     var isCurrent = n === achievedIdx;
     list.appendChild(buildLevelCard(l, l.time, userSecs, isCurrent));
   }
+
+  // Return summary for history
+  if (achievedIdx === -1) {
+    var lastL = escalaoLevels[escalaoLevels.length - 1];
+    return { levelName: 'Abaixo do ' + lastL.name, levelCls: 'sub', context: esc.label };
+  }
+  return { levelName: escalaoLevels[achievedIdx].name, levelCls: escalaoLevels[achievedIdx].cls, context: esc.label };
 }
 
 function evaluatePO(gender, eventId, userSecs, ev, name) {
@@ -868,6 +1035,12 @@ function evaluatePO(gender, eventId, userSecs, ev, name) {
     var ll = PO_LEVELS[m];
     list.appendChild(buildLevelCard(ll, times[m], userSecs, m === achievedIdx));
   }
+
+  // Return summary for history
+  if (achievedIdx === -1) {
+    return { levelName: 'Abaixo de AQ26', levelCls: 'sub', context: 'Projeto Olímpico' };
+  }
+  return { levelName: PO_LEVELS[achievedIdx].name, levelCls: PO_LEVELS[achievedIdx].cls, context: 'Projeto Olímpico' };
 }
 
 function clearAll() {
@@ -885,10 +1058,148 @@ document.getElementById('btn-clear').addEventListener('click', clearAll);
 var btnPrint = document.getElementById('btn-print');
 btnPrint.disabled = true;
 btnPrint.addEventListener('click', function(){
+  document.body.classList.add('print-consulta');
   window.print();
 });
 document.getElementById('time').addEventListener('keypress', function(e){ if (e.key === 'Enter') evaluate(); });
 document.getElementById('name').addEventListener('keypress', function(e){ if (e.key === 'Enter') evaluate(); });
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+// In-session storage. On GitHub Pages this can be upgraded to localStorage.
+var historyItems = [];
+var histFilter = 'all';
+var STORAGE_KEY = 'fpn_par_historico_v1';
+
+// Try to load from localStorage if available (works when hosted, not in sandboxed artifact)
+try {
+  var saved = window.localStorage.getItem(STORAGE_KEY);
+  if (saved) historyItems = JSON.parse(saved) || [];
+} catch (e) { /* sandbox - stays in-memory */ }
+
+function persistHistory() {
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(historyItems)); } catch (e) {}
+}
+
+function recordHistory(item) {
+  item.id = item.ts + '_' + Math.random().toString(36).slice(2, 7);
+  historyItems.unshift(item); // newest first
+  if (historyItems.length > 200) historyItems = historyItems.slice(0, 200);
+  persistHistory();
+}
+
+function deleteHistoryItem(id) {
+  historyItems = historyItems.filter(function(it){ return it.id !== id; });
+  persistHistory();
+  renderHistory();
+}
+
+function resetHistory() {
+  if (historyItems.length === 0) return;
+  if (!window.confirm('Limpar todo o histórico de consultas? Esta ação não pode ser anulada.')) return;
+  historyItems = [];
+  persistHistory();
+  renderHistory();
+}
+
+function fmtDateTime(ts) {
+  var d = new Date(ts);
+  var dd = String(d.getDate()).padStart(2,'0');
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  var yyyy = d.getFullYear();
+  var hh = String(d.getHours()).padStart(2,'0');
+  var mi = String(d.getMinutes()).padStart(2,'0');
+  return dd + '/' + mm + '/' + yyyy + ' · ' + hh + ':' + mi;
+}
+
+function renderHistory() {
+  var list = document.getElementById('hist-list');
+  var empty = document.getElementById('hist-empty');
+  list.innerHTML = '';
+
+  var filtered = historyItems.filter(function(it){
+    return histFilter === 'all' || it.mode === histFilter;
+  });
+
+  if (filtered.length === 0) {
+    empty.style.display = 'block';
+    empty.querySelector('.empty-state-text').innerHTML = historyItems.length === 0
+      ? 'Ainda não há consultas guardadas.<br/>Avalia um tempo no separador PAR ou Projeto Olímpico.'
+      : 'Sem consultas para este filtro.';
+    return;
+  }
+  empty.style.display = 'none';
+
+  for (var i = 0; i < filtered.length; i++) {
+    var it = filtered[i];
+    var card = document.createElement('div');
+    card.className = 'hist-item border-' + it.levelCls;
+
+    var modeTag = it.mode === 'par-pl' ? 'PAR-PL' : 'PROJ. OL.';
+    var nameStr = it.name ? (it.name + ' · ') : '';
+
+    card.innerHTML =
+      '<div class="hist-badge bg-' + it.levelCls + '">' + it.levelName + '</div>' +
+      '<div class="hist-info">' +
+        '<div class="hist-info-main">' + nameStr + it.eventLabel + ' (' + it.genderLabel + ')' +
+          '<span class="hist-mode-tag">' + modeTag + '</span></div>' +
+        '<div class="hist-info-sub">' + it.context + ' · Consultado a ' + fmtDateTime(it.ts) + '</div>' +
+      '</div>' +
+      '<div class="hist-time">' +
+        '<div class="hist-time-val">' + it.timeStr + '</div>' +
+        '<div class="hist-time-date">' + it.genderLabel + '</div>' +
+      '</div>' +
+      '<button class="hist-del" title="Remover" data-id="' + it.id + '">✕</button>';
+
+    list.appendChild(card);
+  }
+
+  // Wire delete buttons
+  var dels = list.querySelectorAll('.hist-del');
+  dels.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      deleteHistoryItem(btn.getAttribute('data-id'));
+    });
+  });
+}
+
+// Filter chips
+var chips = document.querySelectorAll('.chip');
+chips.forEach(function(chip){
+  chip.addEventListener('click', function(){
+    chips.forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    histFilter = chip.getAttribute('data-filter');
+    renderHistory();
+  });
+});
+
+// History print
+document.getElementById('btn-hist-print').addEventListener('click', function(){
+  if (historyItems.length === 0) {
+    window.alert('Não há consultas no histórico para imprimir.');
+    return;
+  }
+  var filterLabel = histFilter === 'all' ? 'Todas as consultas'
+    : (histFilter === 'par-pl' ? 'PAR Piscina Longa' : 'Projeto Olímpico');
+  var now = new Date();
+  var dateStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  var count = historyItems.filter(function(it){ return histFilter === 'all' || it.mode === histFilter; }).length;
+  document.getElementById('hist-print-header').innerHTML =
+    'Histórico de Consultas — ' + filterLabel + ' (' + count + ')';
+  document.getElementById('hist-print-footer').innerHTML =
+    'FPN · PAR Natação Pura 2025–2028 · Listagem gerada a ' + dateStr;
+  document.body.classList.add('print-hist');
+  window.print();
+});
+
+// History reset
+document.getElementById('btn-hist-reset').addEventListener('click', resetHistory);
+
+// Clean up print-mode body classes after printing
+window.addEventListener('afterprint', function(){
+  document.body.classList.remove('print-consulta');
+  document.body.classList.remove('print-hist');
+});
 
 updateUIForMode();
 </script>
