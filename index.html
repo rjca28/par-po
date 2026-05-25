@@ -325,13 +325,15 @@
     .container { padding: 0 !important; max-width: 100% !important; }
 
     /* When printing the consulta view */
-    body.print-consulta #view-historico { display: none !important; }
+    body.print-consulta #view-historico,
+    body.print-consulta #view-excel { display: none !important; }
     body.print-consulta .card, body.print-consulta .empty-state { display: none !important; }
     body.print-consulta .results { display: block !important; }
     body.print-consulta .results:not(.show) { display: none !important; }
 
     /* When printing the histórico view */
-    body.print-hist #view-consulta { display: none !important; }
+    body.print-hist #view-consulta,
+    body.print-hist #view-excel { display: none !important; }
     body.print-hist .hist-toolbar-card { display: none !important; }
     body.print-hist .empty-state { display: none !important; }
     body.print-hist .hist-print-header {
@@ -347,6 +349,25 @@
     }
     body.print-hist .hist-del { display: none !important; }
     body.print-hist .hist-time { display: table-cell; }
+
+    /* When printing the excel view */
+    body.print-excel #view-consulta,
+    body.print-excel #view-historico { display: none !important; }
+    body.print-excel .excel-toolbar-card { display: none !important; }
+    body.print-excel .empty-state { display: none !important; }
+    body.print-excel .excel-print-header {
+      display: block !important;
+      font-size: 14pt; font-weight: 800; color: var(--navy);
+      margin-bottom: 6px;
+    }
+    body.print-excel .excel-print-footer {
+      display: block !important;
+      margin-top: 16px; padding-top: 8px;
+      border-top: 1px solid #CBD5E1;
+      font-size: 8.5pt; color: #555; text-align: center;
+    }
+    body.print-excel .excel-row { box-shadow: none !important; border: 1px solid #CBD5E1; border-left-width: 5px; }
+    body.print-excel .excel-summary { box-shadow: none !important; border: 1px solid #CBD5E1; }
 
     .level-banner {
       box-shadow: none !important;
@@ -460,7 +481,68 @@
     .hist-actions .btn { flex: 1; }
   }
 
+  /* IMPORTAR EXCEL */
+  .excel-drop {
+    border: 2px dashed var(--gray-300);
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--gray-50);
+  }
+  .excel-drop:hover, .excel-drop.dragover {
+    border-color: var(--blue);
+    background: var(--sky-blue);
+  }
+  .excel-drop-icon { font-size: 34px; margin-bottom: 8px; opacity: 0.6; }
+  .excel-drop-text { font-size: 14px; color: var(--gray-700); }
+  .excel-drop-sub { font-size: 12px; color: var(--gray-500); margin-top: 6px; }
+  .excel-summary {
+    background: white; border-radius: 12px; box-shadow: var(--shadow-sm);
+    padding: 16px 18px; margin-bottom: 16px;
+    display: flex; gap: 24px; flex-wrap: wrap;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .excel-stat { text-align: center; }
+  .excel-stat-num { font-size: 24px; font-weight: 800; color: var(--navy); }
+  .excel-stat-lbl { font-size: 11px; color: var(--gray-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+  .excel-group-title {
+    font-size: 13px; font-weight: 700; color: var(--gray-700);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 18px 0 10px; padding-left: 4px;
+  }
+  .excel-row {
+    background: white; border-radius: 10px; box-shadow: var(--shadow-sm);
+    border-left: 5px solid var(--gray-300);
+    padding: 12px 16px; margin-bottom: 8px;
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    align-items: center; gap: 14px;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .excel-row-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 8px;
+    font-size: 13px; font-weight: 800; color: white;
+    white-space: nowrap; min-width: 84px; text-align: center;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .excel-row-info { min-width: 0; }
+  .excel-row-name { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+  .excel-row-sub { font-size: 11.5px; color: var(--gray-500); margin-top: 2px; }
+  .excel-row-time { text-align: right; font-variant-numeric: tabular-nums; }
+  .excel-row-time-val { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+  .excel-row-gap { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .excel-row-gap.ok { color: var(--green); }
+  .excel-row-gap.miss { color: var(--gray-500); }
+  .excel-print-header, .excel-print-footer { display: none; }
+  @media (max-width: 600px) {
+    .excel-row { grid-template-columns: auto 1fr auto; gap: 10px; }
+    .excel-row-time { display: none; }
+  }
+
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -476,6 +558,7 @@
   <div class="tabs">
     <button class="tab active" data-mode="par-pl">PAR Piscina Longa<small>SEN · SUB23 · PA · JUN · JOV</small></button>
     <button class="tab" data-mode="po">Projeto Olímpico<small>Medalhado · Top Elite · Elite · AQ</small></button>
+    <button class="tab" data-mode="excel">Importar Excel<small>Folha de Resultados</small></button>
     <button class="tab" data-mode="hist">Histórico<small>Consultas guardadas</small></button>
   </div>
 
@@ -540,6 +623,63 @@
     <div class="empty-state-icon">📊</div>
     <div class="empty-state-text">Introduz um tempo para verificar o nível e a distância aos níveis seguintes</div>
   </div>
+  </div>
+
+  <!-- ===== VIEW: IMPORTAR EXCEL ===== -->
+  <div id="view-excel" style="display:none">
+    <div class="card excel-toolbar-card">
+      <div class="card-title">Importar Folha de Resultados</div>
+      <div class="info-block">
+        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong> (uma aba por prova, com colunas GENDER, DISTANCE, STROKE, FULLNAME, SWIMTIME…). A app extrai a melhor marca de cada nadador por prova, avalia o nível e mostra a análise completa. Tudo é processado no teu dispositivo — nada é enviado para servidores.
+      </div>
+      <div class="excel-drop" id="excel-drop">
+        <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" />
+        <div class="excel-drop-icon">📁</div>
+        <div class="excel-drop-text">Clica para escolher ou arrasta o ficheiro <strong>.xlsx</strong> para aqui</div>
+        <div class="excel-drop-sub" id="excel-filename">Nenhum ficheiro selecionado</div>
+      </div>
+      <div class="excel-options" id="excel-options" style="display:none">
+        <div class="form-grid" style="margin-top:16px">
+          <div class="field">
+            <label for="excel-mode">Avaliar por</label>
+            <select id="excel-mode">
+              <option value="par-pl">PAR Piscina Longa (índices por escalão)</option>
+              <option value="po">Projeto Olímpico (níveis de apoio)</option>
+            </select>
+          </div>
+          <div class="field" id="excel-field-escalao">
+            <label for="excel-escalao">Escalão (PAR-PL)</label>
+            <select id="excel-escalao">
+              <option value="AUTO">Automático (pelo escalão do nadador)</option>
+              <option value="SEN">Forçar Seniores</option>
+              <option value="SUB23">Forçar Sub-23</option>
+              <option value="PA">Forçar Promessas Aquáticas</option>
+              <option value="JUN">Forçar Juniores</option>
+              <option value="JOV">Forçar Jovens</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="excel-genderfilter">Género</label>
+            <select id="excel-genderfilter">
+              <option value="ALL">Todos</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="btn-excel-process">Analisar Resultados</button>
+          <button class="btn btn-print" id="btn-excel-print">🖨 Imprimir / PDF</button>
+          <button class="btn btn-secondary" id="btn-excel-clear">Limpar</button>
+        </div>
+      </div>
+      <div id="excel-warning"></div>
+    </div>
+
+    <div class="excel-print-header" id="excel-print-header"></div>
+    <div class="excel-summary" id="excel-summary" style="display:none"></div>
+    <div id="excel-results"></div>
+    <div class="print-footer" id="excel-print-footer"></div>
   </div>
 
   <!-- ===== VIEW: HISTÓRICO ===== -->
@@ -807,18 +947,25 @@ tabs.forEach(function(tab){
 function updateUIForMode() {
   var viewConsulta = document.getElementById('view-consulta');
   var viewHist = document.getElementById('view-historico');
+  var viewExcel = document.getElementById('view-excel');
   var escalaoField = document.getElementById('field-escalao');
   var infoBlock = document.getElementById('info-block');
 
+  viewConsulta.style.display = 'none';
+  viewHist.style.display = 'none';
+  viewExcel.style.display = 'none';
+
   if (currentMode === 'hist') {
-    viewConsulta.style.display = 'none';
     viewHist.style.display = 'block';
     renderHistory();
     return;
   }
+  if (currentMode === 'excel') {
+    viewExcel.style.display = 'block';
+    return;
+  }
 
   viewConsulta.style.display = 'block';
-  viewHist.style.display = 'none';
   // reset consulta result area on mode switch between par-pl / po
   document.getElementById('results').classList.remove('show');
   document.getElementById('empty-state').style.display = 'block';
@@ -1199,6 +1346,316 @@ document.getElementById('btn-hist-reset').addEventListener('click', resetHistory
 window.addEventListener('afterprint', function(){
   document.body.classList.remove('print-consulta');
   document.body.classList.remove('print-hist');
+  document.body.classList.remove('print-excel');
+});
+
+// ══ IMPORTAR EXCEL (formato AQUA / Lenex) ════════════════════════════════════
+
+// Map stroke + distance from the sheet to our event IDs
+var STROKE_MAP = { 'Liv':'L', 'Cos':'C', 'Bru':'B', 'Mar':'M', 'Est':'E' };
+function makeEventId(distance, stroke) {
+  var st = STROKE_MAP[String(stroke).trim()];
+  if (!st) return null;
+  var d = parseInt(distance, 10);
+  if (isNaN(d)) return null;
+  var id = d + st;
+  // only keep events we have tables for
+  for (var i = 0; i < EVENTS.length; i++) { if (EVENTS[i].id === id) return id; }
+  return null;
+}
+
+// Resolve PAR-PL level for a given escalão key
+function resolveParPlLevel(gender, eventId, userSecs, escalaoKey) {
+  var esc = ESCALOES[escalaoKey];
+  if (!esc) return null;
+  var allTimes = PARPL[gender][eventId];
+  if (!allTimes) return null;
+  var levels = esc.levels.map(function(lv){ return { name:lv.name, cls:lv.cls, time: allTimes[lv.idx] }; });
+  var achievedIdx = -1;
+  for (var i = 0; i < levels.length; i++) { if (userSecs <= levels[i].time) { achievedIdx = i; break; } }
+  if (achievedIdx === -1) {
+    var last = levels[levels.length - 1];
+    return { levelName: 'Abaixo do ' + last.name, levelCls: 'sub', target: last.time, achieved: false };
+  }
+  return { levelName: levels[achievedIdx].name, levelCls: levels[achievedIdx].cls, target: levels[achievedIdx].time, achieved: true };
+}
+
+// Resolve Projeto Olímpico level
+function resolvePOLevel(gender, eventId, userSecs) {
+  var times = PO[gender][eventId];
+  if (!times) return null;
+  var achievedIdx = -1;
+  for (var i = 0; i < PO_LEVELS.length; i++) { if (userSecs <= times[i]) { achievedIdx = i; break; } }
+  if (achievedIdx === -1) {
+    return { levelName: 'Abaixo de AQ26', levelCls: 'sub', target: times[5], achieved: false };
+  }
+  return { levelName: PO_LEVELS[achievedIdx].name, levelCls: PO_LEVELS[achievedIdx].cls, target: times[achievedIdx], achieved: true };
+}
+
+// Determine PAR escalão automatically from birth year (época 2025/2026)
+// SEN: 2007 e + velhos · SUB23: 2003 e + novos · JUN: 2008 · JOV: 2010/2011 · senão SEN
+function autoEscalaoFromBirth(birthYear) {
+  if (!birthYear) return 'SEN';
+  if (birthYear <= 2007) return 'SEN';
+  if (birthYear === 2008 || birthYear === 2009) return 'JUN';
+  if (birthYear === 2010 || birthYear === 2011) return 'JOV';
+  return 'JOV';
+}
+
+function getBirthYear(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val.getFullYear();
+  var s = String(val);
+  var m = s.match(/(\d{4})/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function prettyName(fullname) {
+  // "RIBEIRO, Diogo Mat" -> "Diogo Mat Ribeiro"
+  if (!fullname) return '';
+  var s = String(fullname).trim();
+  var parts = s.split(',');
+  if (parts.length === 2) {
+    var last = parts[0].trim();
+    var first = parts[1].trim();
+    // Title-case the all-caps surname
+    last = last.charAt(0).toUpperCase() + last.slice(1).toLowerCase();
+    return first + ' ' + last;
+  }
+  return s;
+}
+
+var excelData = null;   // parsed rows: {gender, eventId, eventLabel, name, club, birthYear, secs, timeStr}
+var excelResults = [];  // analysis output
+
+var excelDrop = document.getElementById('excel-drop');
+var excelFile = document.getElementById('excel-file');
+var excelOptions = document.getElementById('excel-options');
+var excelWarning = document.getElementById('excel-warning');
+
+excelDrop.addEventListener('click', function(){ excelFile.click(); });
+excelDrop.addEventListener('dragover', function(e){ e.preventDefault(); excelDrop.classList.add('dragover'); });
+excelDrop.addEventListener('dragleave', function(){ excelDrop.classList.remove('dragover'); });
+excelDrop.addEventListener('drop', function(e){
+  e.preventDefault(); excelDrop.classList.remove('dragover');
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) handleExcelFile(e.dataTransfer.files[0]);
+});
+excelFile.addEventListener('change', function(e){
+  if (e.target.files && e.target.files[0]) handleExcelFile(e.target.files[0]);
+});
+
+document.getElementById('excel-mode').addEventListener('change', function(e){
+  document.getElementById('excel-field-escalao').style.display = (e.target.value === 'par-pl') ? '' : 'none';
+});
+
+function handleExcelFile(file) {
+  excelWarning.innerHTML = '';
+  document.getElementById('excel-filename').textContent = file.name;
+  if (typeof XLSX === 'undefined') {
+    excelWarning.innerHTML = '<div class="warning">⚠ A biblioteca de leitura de Excel não carregou. Verifica a ligação à internet e recarrega a página.</div>';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    try {
+      var wb = XLSX.read(ev.target.result, { type: 'array' });
+      parseWorkbook(wb);
+    } catch (err) {
+      excelWarning.innerHTML = '<div class="warning">⚠ Não foi possível ler o ficheiro: ' + err.message + '</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseWorkbook(wb) {
+  var rows = [];
+  var best = {}; // key gender|eventId|name -> fastest secs
+
+  for (var si = 0; si < wb.SheetNames.length; si++) {
+    var name = wb.SheetNames[si];
+    var ws = wb.Sheets[name];
+    var json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    // find header row (contains GENDER / SWIMTIME)
+    var headerRow = -1, col = {};
+    for (var r = 0; r < Math.min(json.length, 6); r++) {
+      var rowArr = json[r] || [];
+      for (var c = 0; c < rowArr.length; c++) {
+        var cell = String(rowArr[c] || '').trim().toUpperCase();
+        if (cell === 'GENDER') col.gender = c;
+        if (cell === 'DISTANCE') col.distance = c;
+        if (cell === 'STROKE') col.stroke = c;
+        if (cell === 'FULLNAME') col.name = c;
+        if (cell === 'BIRTHDATE') col.birth = c;
+        if (cell === 'CLUBCODE') col.club = c;
+        if (cell === 'SWIMTIME') col.swim = c;
+      }
+      if (col.gender !== undefined && col.swim !== undefined) { headerRow = r; break; }
+    }
+    if (headerRow === -1) continue; // not an event sheet (e.g. Top Results without these headers)
+
+    for (var rr = headerRow + 1; rr < json.length; rr++) {
+      var row = json[rr] || [];
+      var g = String(row[col.gender] || '').trim().toUpperCase();
+      if (g !== 'M' && g !== 'F') continue;
+      var eventId = makeEventId(row[col.distance], row[col.stroke]);
+      if (!eventId) continue; // skip relays, lap splits, unsupported
+      var swim = row[col.swim];
+      var secs = parseTime(String(swim));
+      if (secs == null) continue;
+      var fullname = row[col.name];
+      if (!fullname) continue;
+      var key = g + '|' + eventId + '|' + String(fullname).trim();
+      if (best[key] === undefined || secs < best[key].secs) {
+        best[key] = {
+          gender: g,
+          eventId: eventId,
+          eventLabel: (function(){ for (var i=0;i<EVENTS.length;i++){ if(EVENTS[i].id===eventId) return EVENTS[i].label; } return eventId; })(),
+          name: prettyName(fullname),
+          club: row[col.club] ? String(row[col.club]).trim() : '',
+          birthYear: getBirthYear(row[col.birth]),
+          secs: secs,
+          timeStr: secondsToTime(secs)
+        };
+      }
+    }
+  }
+
+  rows = Object.keys(best).map(function(k){ return best[k]; });
+  excelData = rows;
+
+  if (rows.length === 0) {
+    excelWarning.innerHTML = '<div class="warning">⚠ Não foram encontrados resultados válidos. Confirma que o ficheiro tem abas por prova com as colunas GENDER, DISTANCE, STROKE, FULLNAME e SWIMTIME.</div>';
+    excelOptions.style.display = 'none';
+    return;
+  }
+
+  excelWarning.innerHTML = '<div class="info-block" style="margin-bottom:0">✓ Ficheiro lido: <strong>' + rows.length + '</strong> marcas individuais (melhor de cada nadador por prova). Escolhe as opções e clica em <strong>Analisar Resultados</strong>.</div>';
+  excelOptions.style.display = 'block';
+}
+
+document.getElementById('btn-excel-process').addEventListener('click', processExcel);
+document.getElementById('btn-excel-clear').addEventListener('click', function(){
+  excelData = null; excelResults = [];
+  document.getElementById('excel-results').innerHTML = '';
+  document.getElementById('excel-summary').style.display = 'none';
+  document.getElementById('excel-options').style.display = 'none';
+  document.getElementById('excel-filename').textContent = 'Nenhum ficheiro selecionado';
+  document.getElementById('excel-warning').innerHTML = '';
+  excelFile.value = '';
+});
+
+function processExcel() {
+  if (!excelData || excelData.length === 0) return;
+  var mode = document.getElementById('excel-mode').value;
+  var escalaoOpt = document.getElementById('excel-escalao').value;
+  var genderFilter = document.getElementById('excel-genderfilter').value;
+
+  excelResults = [];
+  for (var i = 0; i < excelData.length; i++) {
+    var d = excelData[i];
+    if (genderFilter !== 'ALL' && d.gender !== genderFilter) continue;
+    var res, ctx;
+    if (mode === 'par-pl') {
+      var escKey = (escalaoOpt === 'AUTO') ? autoEscalaoFromBirth(d.birthYear) : escalaoOpt;
+      res = resolveParPlLevel(d.gender, d.eventId, d.secs, escKey);
+      ctx = ESCALOES[escKey] ? ESCALOES[escKey].label : escKey;
+    } else {
+      res = resolvePOLevel(d.gender, d.eventId, d.secs);
+      ctx = 'Projeto Olímpico';
+    }
+    if (!res) continue;
+    var gapSecs = d.secs - res.target;
+    excelResults.push({
+      gender: d.gender,
+      genderLabel: d.gender === 'M' ? 'Masculino' : 'Feminino',
+      name: d.name, club: d.club, birthYear: d.birthYear,
+      eventLabel: d.eventLabel, timeStr: d.timeStr,
+      levelName: res.levelName, levelCls: res.levelCls,
+      achieved: res.achieved, target: res.target, gapSecs: gapSecs,
+      context: ctx
+    });
+  }
+
+  renderExcelResults(mode);
+}
+
+function renderExcelResults(mode) {
+  var container = document.getElementById('excel-results');
+  var summary = document.getElementById('excel-summary');
+  container.innerHTML = '';
+
+  if (excelResults.length === 0) {
+    summary.style.display = 'none';
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Sem resultados para as opções escolhidas.</div></div>';
+    return;
+  }
+
+  // Summary stats
+  var total = excelResults.length;
+  var achievedCount = excelResults.filter(function(r){ return r.achieved; }).length;
+  var nadadores = {};
+  excelResults.forEach(function(r){ nadadores[r.name] = true; });
+  summary.style.display = 'flex';
+  summary.innerHTML =
+    '<div class="excel-stat"><div class="excel-stat-num">' + Object.keys(nadadores).length + '</div><div class="excel-stat-lbl">Nadadores</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num">' + total + '</div><div class="excel-stat-lbl">Marcas avaliadas</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num">' + achievedCount + '</div><div class="excel-stat-lbl">Com nível atingido</div></div>';
+
+  // Sort: achieved first, then by level strength is complex; sort by name then event
+  excelResults.sort(function(a,b){
+    if (a.name !== b.name) return a.name.localeCompare(b.name);
+    return a.eventLabel.localeCompare(b.eventLabel);
+  });
+
+  // Group by nadador
+  var byName = {};
+  excelResults.forEach(function(r){ (byName[r.name] = byName[r.name] || []).push(r); });
+
+  Object.keys(byName).sort().forEach(function(nm){
+    var title = document.createElement('div');
+    title.className = 'excel-group-title';
+    var first = byName[nm][0];
+    title.textContent = nm + (first.club ? ' · ' + first.club : '') + (first.birthYear ? ' · ' + first.birthYear : '');
+    container.appendChild(title);
+
+    byName[nm].forEach(function(r){
+      var row = document.createElement('div');
+      row.className = 'excel-row border-' + r.levelCls;
+      var gapStr, gapCls;
+      if (r.achieved) {
+        gapStr = '✓ −' + fmt2(Math.abs(r.gapSecs)) + ' s'; gapCls = 'ok';
+      } else {
+        gapStr = '+' + fmt2(r.gapSecs) + ' s · ' + fmt2(r.gapSecs / r.target * 100) + '%'; gapCls = 'miss';
+      }
+      row.innerHTML =
+        '<div class="excel-row-badge bg-' + r.levelCls + '">' + r.levelName + '</div>' +
+        '<div class="excel-row-info">' +
+          '<div class="excel-row-name">' + r.eventLabel + ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.genderLabel + ')</span></div>' +
+          '<div class="excel-row-sub">' + r.context + ' · Mínimo: ' + secondsToTime(r.target) + '</div>' +
+        '</div>' +
+        '<div class="excel-row-time">' +
+          '<div class="excel-row-time-val">' + r.timeStr + '</div>' +
+          '<div class="excel-row-gap ' + gapCls + '">' + gapStr + '</div>' +
+        '</div>';
+      container.appendChild(row);
+    });
+  });
+}
+
+// Excel print
+document.getElementById('btn-excel-print').addEventListener('click', function(){
+  if (!excelResults || excelResults.length === 0) {
+    window.alert('Não há análise para imprimir. Carrega um ficheiro e clica em "Analisar Resultados".');
+    return;
+  }
+  var mode = document.getElementById('excel-mode').value;
+  var modeLabel = mode === 'par-pl' ? 'PAR Piscina Longa' : 'Projeto Olímpico';
+  var now = new Date();
+  var dateStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  document.getElementById('excel-print-header').innerHTML = 'Análise de Resultados — ' + modeLabel;
+  document.getElementById('excel-print-footer').innerHTML = 'FPN · PAR Natação Pura 2025–2028 · Análise gerada a ' + dateStr;
+  document.body.classList.add('print-excel');
+  window.print();
 });
 
 updateUIForMode();
