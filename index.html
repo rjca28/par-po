@@ -630,7 +630,7 @@
     <div class="card excel-toolbar-card">
       <div class="card-title">Importar Folha de Resultados</div>
       <div class="info-block">
-        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong> (uma aba por prova, com colunas GENDER, DISTANCE, STROKE, FULLNAME, SWIMTIME…). A app extrai a melhor marca de cada nadador por prova, avalia o nível e mostra a análise completa. Tudo é processado no teu dispositivo — nada é enviado para servidores.
+        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong> (uma aba por prova). A app avalia todas as marcas de cada nadador e apresenta <strong>apenas o nível mais exigente atingido por cada um</strong>, em função da idade/escalão. Nadadores sem qualquer nível não são apresentados. Tudo é processado no teu dispositivo.
       </div>
       <div class="excel-drop" id="excel-drop">
         <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" />
@@ -871,41 +871,41 @@ var ESCALOES = {
   SEN: {
     label:'Seniores',
     levels:[
-      {id:'sen-a', name:'SEN-A', subtitle:'Índice 4 · −40p', idx:1, cls:'sen-a'},
-      {id:'sen-b', name:'SEN-B', subtitle:'Índice 6 · −60p', idx:2, cls:'sen-b'},
-      {id:'sen-c', name:'SEN-C', subtitle:'Índice 8 · −80p', idx:4, cls:'sen-c'}
+      {id:'sen-a', name:'SEN-A', subtitle:'Índice 4 · −40p', idx:1, indice:4, cls:'sen-a'},
+      {id:'sen-b', name:'SEN-B', subtitle:'Índice 6 · −60p', idx:2, indice:6, cls:'sen-b'},
+      {id:'sen-c', name:'SEN-C', subtitle:'Índice 8 · −80p', idx:4, indice:8, cls:'sen-c'}
     ]
   },
   SUB23: {
     label:'Sub-23',
     levels:[
-      {id:'sub23-a', name:'SUB23-A', subtitle:'Índice 7 · −70p',  idx:3, cls:'sub23-a'},
-      {id:'sub23-b', name:'SUB23-B', subtitle:'Índice 9 · −90p',  idx:5, cls:'sub23-b'},
-      {id:'sub23-c', name:'SUB23-C', subtitle:'Índice 11 · −110p', idx:6, cls:'sub23-c'}
+      {id:'sub23-a', name:'SUB23-A', subtitle:'Índice 7 · −70p',  idx:3, indice:7, cls:'sub23-a'},
+      {id:'sub23-b', name:'SUB23-B', subtitle:'Índice 9 · −90p',  idx:5, indice:9, cls:'sub23-b'},
+      {id:'sub23-c', name:'SUB23-C', subtitle:'Índice 11 · −110p', idx:6, indice:11, cls:'sub23-c'}
     ]
   },
   PA: {
     label:'Promessas Aquáticas',
     levels:[
-      {id:'pa-sub23', name:'PA-SUB23', subtitle:'Índice 13 · −130p', idx:7,  cls:'pa-sub23'},
-      {id:'pa-jun',   name:'PA-JUN',   subtitle:'Índice 20 · −200p', idx:11, cls:'pa-jun'},
-      {id:'pa-jov',   name:'PA-JOV',   subtitle:'Índice 27 · −270p', idx:15, cls:'pa-jov'}
+      {id:'pa-sub23', name:'PA-SUB23', subtitle:'Índice 13 · −130p', idx:7,  indice:13, cls:'pa-sub23'},
+      {id:'pa-jun',   name:'PA-JUN',   subtitle:'Índice 20 · −200p', idx:11, indice:20, cls:'pa-jun'},
+      {id:'pa-jov',   name:'PA-JOV',   subtitle:'Índice 27 · −270p', idx:15, indice:27, cls:'pa-jov'}
     ]
   },
   JUN: {
     label:'Juniores',
     levels:[
-      {id:'jun-a', name:'JUN-A', subtitle:'Índice 15 · −150p', idx:8,  cls:'jun-a'},
-      {id:'jun-b', name:'JUN-B', subtitle:'Índice 17 · −170p', idx:9,  cls:'jun-b'},
-      {id:'jun-c', name:'JUN-C', subtitle:'Índice 19 · −190p', idx:10, cls:'jun-c'}
+      {id:'jun-a', name:'JUN-A', subtitle:'Índice 15 · −150p', idx:8,  indice:15, cls:'jun-a'},
+      {id:'jun-b', name:'JUN-B', subtitle:'Índice 17 · −170p', idx:9,  indice:17, cls:'jun-b'},
+      {id:'jun-c', name:'JUN-C', subtitle:'Índice 19 · −190p', idx:10, indice:19, cls:'jun-c'}
     ]
   },
   JOV: {
     label:'Jovens',
     levels:[
-      {id:'jov-a', name:'JOV-A', subtitle:'Índice 21 · −210p', idx:12, cls:'jov-a'},
-      {id:'jov-b', name:'JOV-B', subtitle:'Índice 23 · −230p', idx:13, cls:'jov-b'},
-      {id:'jov-c', name:'JOV-C', subtitle:'Índice 25 · −250p', idx:14, cls:'jov-c'}
+      {id:'jov-a', name:'JOV-A', subtitle:'Índice 21 · −210p', idx:12, indice:21, cls:'jov-a'},
+      {id:'jov-b', name:'JOV-B', subtitle:'Índice 23 · −230p', idx:13, indice:23, cls:'jov-b'},
+      {id:'jov-c', name:'JOV-C', subtitle:'Índice 25 · −250p', idx:14, indice:25, cls:'jov-c'}
     ]
   }
 };
@@ -1370,14 +1370,15 @@ function resolveParPlLevel(gender, eventId, userSecs, escalaoKey) {
   if (!esc) return null;
   var allTimes = PARPL[gender][eventId];
   if (!allTimes) return null;
-  var levels = esc.levels.map(function(lv){ return { name:lv.name, cls:lv.cls, time: allTimes[lv.idx] }; });
+  var levels = esc.levels.map(function(lv){ return { name:lv.name, cls:lv.cls, indice:lv.indice, time: allTimes[lv.idx] }; });
   var achievedIdx = -1;
   for (var i = 0; i < levels.length; i++) { if (userSecs <= levels[i].time) { achievedIdx = i; break; } }
   if (achievedIdx === -1) {
     var last = levels[levels.length - 1];
-    return { levelName: 'Abaixo do ' + last.name, levelCls: 'sub', target: last.time, achieved: false };
+    return { levelName: 'Abaixo do ' + last.name, levelCls: 'sub', target: last.time, achieved: false, strength: -1 };
   }
-  return { levelName: levels[achievedIdx].name, levelCls: levels[achievedIdx].cls, target: levels[achievedIdx].time, achieved: true };
+  // Strength: lower índice = more demanding. Use (300 - indice) so higher = stronger.
+  return { levelName: levels[achievedIdx].name, levelCls: levels[achievedIdx].cls, target: levels[achievedIdx].time, achieved: true, strength: 300 - levels[achievedIdx].indice };
 }
 
 // Resolve Projeto Olímpico level
@@ -1387,9 +1388,10 @@ function resolvePOLevel(gender, eventId, userSecs) {
   var achievedIdx = -1;
   for (var i = 0; i < PO_LEVELS.length; i++) { if (userSecs <= times[i]) { achievedIdx = i; break; } }
   if (achievedIdx === -1) {
-    return { levelName: 'Abaixo de AQ26', levelCls: 'sub', target: times[5], achieved: false };
+    return { levelName: 'Abaixo de AQ26', levelCls: 'sub', target: times[5], achieved: false, strength: -1 };
   }
-  return { levelName: PO_LEVELS[achievedIdx].name, levelCls: PO_LEVELS[achievedIdx].cls, target: times[achievedIdx], achieved: true };
+  // PO_LEVELS index 0 = Medalhado (strongest). Strength = (length - index).
+  return { levelName: PO_LEVELS[achievedIdx].name, levelCls: PO_LEVELS[achievedIdx].cls, target: times[achievedIdx], achieved: true, strength: PO_LEVELS.length - achievedIdx };
 }
 
 // Determine PAR escalão automatically from birth year (época 2025/2026)
@@ -1550,31 +1552,46 @@ function processExcel() {
   var escalaoOpt = document.getElementById('excel-escalao').value;
   var genderFilter = document.getElementById('excel-genderfilter').value;
 
-  excelResults = [];
+  // Evaluate every mark, but keep only the BEST (most demanding) achieved level per swimmer.
+  var bestByName = {}; // name -> best result object
+  var totalSwimmers = {}; // count distinct swimmers evaluated
+
   for (var i = 0; i < excelData.length; i++) {
     var d = excelData[i];
     if (genderFilter !== 'ALL' && d.gender !== genderFilter) continue;
-    var res, ctx;
+    totalSwimmers[d.name] = true;
+
+    var res, ctx, escKey;
     if (mode === 'par-pl') {
-      var escKey = (escalaoOpt === 'AUTO') ? autoEscalaoFromBirth(d.birthYear) : escalaoOpt;
+      escKey = (escalaoOpt === 'AUTO') ? autoEscalaoFromBirth(d.birthYear) : escalaoOpt;
       res = resolveParPlLevel(d.gender, d.eventId, d.secs, escKey);
       ctx = ESCALOES[escKey] ? ESCALOES[escKey].label : escKey;
     } else {
       res = resolvePOLevel(d.gender, d.eventId, d.secs);
       ctx = 'Projeto Olímpico';
     }
-    if (!res) continue;
-    var gapSecs = d.secs - res.target;
-    excelResults.push({
+    if (!res || !res.achieved) continue; // ignore marks that reach no level
+
+    var candidate = {
       gender: d.gender,
       genderLabel: d.gender === 'M' ? 'Masculino' : 'Feminino',
       name: d.name, club: d.club, birthYear: d.birthYear,
       eventLabel: d.eventLabel, timeStr: d.timeStr,
       levelName: res.levelName, levelCls: res.levelCls,
-      achieved: res.achieved, target: res.target, gapSecs: gapSecs,
+      strength: res.strength, target: res.target,
+      gapSecs: d.secs - res.target,
       context: ctx
-    });
+    };
+
+    var prev = bestByName[d.name];
+    if (!prev || candidate.strength > prev.strength) {
+      bestByName[d.name] = candidate;
+    }
   }
+
+  // Build final list: one entry per swimmer, only those WITH a level
+  excelResults = Object.keys(bestByName).map(function(k){ return bestByName[k]; });
+  excelResults._totalSwimmers = Object.keys(totalSwimmers).length;
 
   renderExcelResults(mode);
 }
@@ -1584,58 +1601,60 @@ function renderExcelResults(mode) {
   var summary = document.getElementById('excel-summary');
   container.innerHTML = '';
 
+  var totalSwimmers = excelResults._totalSwimmers || 0;
+
   if (excelResults.length === 0) {
-    summary.style.display = 'none';
-    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Sem resultados para as opções escolhidas.</div></div>';
+    summary.style.display = 'flex';
+    summary.innerHTML =
+      '<div class="excel-stat"><div class="excel-stat-num">' + totalSwimmers + '</div><div class="excel-stat-lbl">Nadadores analisados</div></div>' +
+      '<div class="excel-stat"><div class="excel-stat-num">0</div><div class="excel-stat-lbl">Com nível atingido</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Nenhum nadador atingiu um nível com as opções escolhidas.</div></div>';
     return;
   }
 
-  // Summary stats
-  var total = excelResults.length;
-  var achievedCount = excelResults.filter(function(r){ return r.achieved; }).length;
-  var nadadores = {};
-  excelResults.forEach(function(r){ nadadores[r.name] = true; });
+  // Summary
   summary.style.display = 'flex';
   summary.innerHTML =
-    '<div class="excel-stat"><div class="excel-stat-num">' + Object.keys(nadadores).length + '</div><div class="excel-stat-lbl">Nadadores</div></div>' +
-    '<div class="excel-stat"><div class="excel-stat-num">' + total + '</div><div class="excel-stat-lbl">Marcas avaliadas</div></div>' +
-    '<div class="excel-stat"><div class="excel-stat-num">' + achievedCount + '</div><div class="excel-stat-lbl">Com nível atingido</div></div>';
+    '<div class="excel-stat"><div class="excel-stat-num">' + totalSwimmers + '</div><div class="excel-stat-lbl">Nadadores analisados</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num">' + excelResults.length + '</div><div class="excel-stat-lbl">Com nível atingido</div></div>';
 
-  // Sort: achieved first, then by level strength is complex; sort by name then event
-  excelResults.sort(function(a,b){
-    if (a.name !== b.name) return a.name.localeCompare(b.name);
-    return a.eventLabel.localeCompare(b.eventLabel);
-  });
+  // Split by gender
+  var groups = [
+    { key:'M', label:'MASCULINOS' },
+    { key:'F', label:'FEMININOS' }
+  ];
 
-  // Group by nadador
-  var byName = {};
-  excelResults.forEach(function(r){ (byName[r.name] = byName[r.name] || []).push(r); });
+  groups.forEach(function(g){
+    var items = excelResults.filter(function(r){ return r.gender === g.key; });
+    if (items.length === 0) return;
 
-  Object.keys(byName).sort().forEach(function(nm){
+    // Sort by level strength desc, then by gap (closer to next), then name
+    items.sort(function(a,b){
+      if (b.strength !== a.strength) return b.strength - a.strength;
+      if (a.name !== b.name) return a.name.localeCompare(b.name);
+      return 0;
+    });
+
     var title = document.createElement('div');
     title.className = 'excel-group-title';
-    var first = byName[nm][0];
-    title.textContent = nm + (first.club ? ' · ' + first.club : '') + (first.birthYear ? ' · ' + first.birthYear : '');
+    title.textContent = g.label + ' (' + items.length + ')';
     container.appendChild(title);
 
-    byName[nm].forEach(function(r){
+    items.forEach(function(r){
       var row = document.createElement('div');
       row.className = 'excel-row border-' + r.levelCls;
-      var gapStr, gapCls;
-      if (r.achieved) {
-        gapStr = '✓ −' + fmt2(Math.abs(r.gapSecs)) + ' s'; gapCls = 'ok';
-      } else {
-        gapStr = '+' + fmt2(r.gapSecs) + ' s · ' + fmt2(r.gapSecs / r.target * 100) + '%'; gapCls = 'miss';
-      }
+      var marginStr = '✓ ' + fmt2(Math.abs(r.gapSecs)) + ' s de margem';
       row.innerHTML =
         '<div class="excel-row-badge bg-' + r.levelCls + '">' + r.levelName + '</div>' +
         '<div class="excel-row-info">' +
-          '<div class="excel-row-name">' + r.eventLabel + ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.genderLabel + ')</span></div>' +
-          '<div class="excel-row-sub">' + r.context + ' · Mínimo: ' + secondsToTime(r.target) + '</div>' +
+          '<div class="excel-row-name">' + r.name +
+            (r.birthYear ? ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.birthYear + ')</span>' : '') +
+          '</div>' +
+          '<div class="excel-row-sub">' + (r.club ? r.club + ' · ' : '') + r.context + ' · Melhor nível em ' + r.eventLabel + '</div>' +
         '</div>' +
         '<div class="excel-row-time">' +
           '<div class="excel-row-time-val">' + r.timeStr + '</div>' +
-          '<div class="excel-row-gap ' + gapCls + '">' + gapStr + '</div>' +
+          '<div class="excel-row-gap ok">' + marginStr + '</div>' +
         '</div>';
       container.appendChild(row);
     });
