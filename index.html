@@ -1466,11 +1466,33 @@ function resolveParPlByAge(gender, eventId, userSecs, birthYear) {
 }
 
 function getBirthYear(val) {
-  if (!val) return null;
-  if (val instanceof Date) return val.getFullYear();
-  var s = String(val);
-  var m = s.match(/(\d{4})/);
-  return m ? parseInt(m[1], 10) : null;
+  if (val === null || val === undefined || val === '') return null;
+  // Real Date object (quando cellDates:true)
+  if (val instanceof Date && !isNaN(val.getTime())) return val.getFullYear();
+  // Número de série do Excel (dias desde 1899-12-30) ou ano direto
+  if (typeof val === 'number' && val > 0) {
+    // Ano direto (ex: 2007) — um nº de 4 dígitos entre 1900 e 2050
+    if (val >= 1900 && val <= 2050 && Number.isInteger(val)) return val;
+    // Serial do Excel
+    if (val > 1 && val < 60000) {
+      var d = new Date(Math.round((val - 25569) * 86400 * 1000));
+      if (!isNaN(d.getTime())) {
+        var y = d.getUTCFullYear();
+        if (y >= 1900 && y <= 2050) return y;
+      }
+    }
+    return null;
+  }
+  var s = String(val).trim();
+  // Procurar um ano de 4 dígitos plausível (1900–2050) em qualquer posição
+  var matches = s.match(/\d{4}/g);
+  if (matches) {
+    for (var i = 0; i < matches.length; i++) {
+      var yr = parseInt(matches[i], 10);
+      if (yr >= 1900 && yr <= 2050) return yr;
+    }
+  }
+  return null;
 }
 
 function prettyName(fullname) {
@@ -1521,7 +1543,7 @@ function handleExcelFile(file) {
   var reader = new FileReader();
   reader.onload = function(ev){
     try {
-      var wb = XLSX.read(ev.target.result, { type: 'array' });
+      var wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
       parseWorkbook(wb);
     } catch (err) {
       excelWarning.innerHTML = '<div class="warning">⚠ Não foi possível ler o ficheiro: ' + err.message + '</div>';
@@ -1549,6 +1571,7 @@ function parseWorkbook(wb) {
         if (cell === 'STROKE') col.stroke = c;
         if (cell === 'FULLNAME') col.name = c;
         if (cell === 'BIRTHDATE') col.birth = c;
+        if (cell === 'NATION') col.nation = c;
         if (cell === 'CLUBCODE') col.club = c;
         if (cell === 'SWIMTIME') col.swim = c;
       }
@@ -1560,6 +1583,11 @@ function parseWorkbook(wb) {
       var row = json[rr] || [];
       var g = String(row[col.gender] || '').trim().toUpperCase();
       if (g !== 'M' && g !== 'F') continue;
+      // Apenas nadadores portugueses
+      if (col.nation !== undefined) {
+        var nat = String(row[col.nation] || '').trim().toUpperCase();
+        if (nat !== 'POR') continue;
+      }
       var eventId = makeEventId(row[col.distance], row[col.stroke]);
       if (!eventId) continue; // skip relays, lap splits, unsupported
       var swim = row[col.swim];
