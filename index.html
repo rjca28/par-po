@@ -536,6 +536,15 @@
   .excel-row-gap.ok { color: var(--green); }
   .excel-row-gap.miss { color: var(--gray-500); }
   .excel-print-header, .excel-print-footer { display: none; }
+  .lap-tag {
+    display: inline-block; font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.04em; padding: 1px 6px; border-radius: 6px;
+    background: #FEF0C7; color: #92600A; margin-left: 6px;
+    vertical-align: middle; border: 1px solid #F4D88A;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .btn-excel { background: #1A6B3C; color: #fff; }
+  .btn-excel:hover { background: #14572F; transform: translateY(-1px); box-shadow: var(--shadow-md); }
   @media (max-width: 600px) {
     .excel-row { grid-template-columns: auto 1fr auto; gap: 10px; }
     .excel-row-time { display: none; }
@@ -630,7 +639,7 @@
     <div class="card excel-toolbar-card">
       <div class="card-title">Importar Folha de Resultados</div>
       <div class="info-block">
-        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong>. No modo <strong>Automático</strong>, cada nadador é avaliado no seu escalão pela idade. Ao escolher os índices de um escalão específico, esses são os índices usados (A/B/C), mas a <strong>regra da idade mantém-se como piso</strong> — nenhum nadador recebe um nível abaixo do permitido pela sua idade. São listadas <strong>todas as marcas com nível</strong> (o mesmo nadador pode repetir-se em várias provas). Apenas nadadores portugueses (POR).
+        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong>. As marcas obtidas como <strong>parcial</strong> (abas "Lap") são identificadas com a etiqueta <span class="lap-tag">PARCIAL (LAP)</span> e podem ser filtradas. No modo <strong>Automático</strong>, cada nadador é avaliado no seu escalão pela idade; ao escolher os índices de um escalão, a regra da idade mantém-se como piso. Lista <strong>todas as marcas com nível</strong>, ordenáveis e exportáveis para Excel. Apenas nadadores portugueses (POR).
       </div>
       <div class="excel-drop" id="excel-drop">
         <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" />
@@ -666,10 +675,28 @@
               <option value="F">Feminino</option>
             </select>
           </div>
+          <div class="field">
+            <label for="excel-source">Origem da marca</label>
+            <select id="excel-source">
+              <option value="ALL">Todas (prova + parcial Lap)</option>
+              <option value="RACE">Apenas provas</option>
+              <option value="LAP">Apenas parciais (Lap)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="excel-sort">Ordenar por</label>
+            <select id="excel-sort">
+              <option value="lvl-desc">Nível (mais alto → mais baixo)</option>
+              <option value="lvl-asc">Nível (mais baixo → mais alto)</option>
+              <option value="az">Nome (A → Z)</option>
+              <option value="za">Nome (Z → A)</option>
+            </select>
+          </div>
         </div>
         <div class="actions">
           <button class="btn btn-primary" id="btn-excel-process">Analisar Resultados</button>
           <button class="btn btn-print" id="btn-excel-print">🖨 Imprimir / PDF</button>
+          <button class="btn btn-excel" id="btn-excel-export">📊 Exportar Excel</button>
           <button class="btn btn-secondary" id="btn-excel-clear">Limpar</button>
         </div>
       </div>
@@ -1636,6 +1663,7 @@ function parseWorkbook(wb) {
 
   for (var si = 0; si < wb.SheetNames.length; si++) {
     var name = wb.SheetNames[si];
+    var isLap = /\bLAP\b/i.test(name) || /LAP/i.test(name.replace(/\s/g,''));
     var ws = wb.Sheets[name];
     var json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
     // find header row (contains GENDER / SWIMTIME)
@@ -1667,13 +1695,14 @@ function parseWorkbook(wb) {
         if (nat !== 'POR') continue;
       }
       var eventId = makeEventId(row[col.distance], row[col.stroke]);
-      if (!eventId) continue; // skip relays, lap splits, unsupported
+      if (!eventId) continue; // skip relays, unsupported
       var swim = row[col.swim];
       var secs = parseTime(String(swim));
       if (secs == null) continue;
       var fullname = row[col.name];
       if (!fullname) continue;
-      var key = g + '|' + eventId + '|' + String(fullname).trim();
+      // chave inclui a origem (Lap vs prova) para não fundir os dois tipos
+      var key = g + '|' + eventId + '|' + String(fullname).trim() + '|' + (isLap ? 'LAP' : 'RACE');
       if (best[key] === undefined || secs < best[key].secs) {
         best[key] = {
           gender: g,
@@ -1683,7 +1712,8 @@ function parseWorkbook(wb) {
           club: row[col.club] ? String(row[col.club]).trim() : '',
           birthYear: getBirthYear(row[col.birth]),
           secs: secs,
-          timeStr: secondsToTime(secs)
+          timeStr: secondsToTime(secs),
+          isLap: isLap
         };
       }
     }
@@ -1718,6 +1748,7 @@ function processExcel() {
   var mode = document.getElementById('excel-mode').value;
   var escalaoOpt = document.getElementById('excel-escalao').value;
   var genderFilter = document.getElementById('excel-genderfilter').value;
+  var sourceFilter = document.getElementById('excel-source').value;
 
   // Recolhe TODAS as marcas com nível (repete nadador por cada prova).
   var allResults = [];
@@ -1727,6 +1758,8 @@ function processExcel() {
   for (var i = 0; i < excelData.length; i++) {
     var d = excelData[i];
     if (genderFilter !== 'ALL' && d.gender !== genderFilter) continue;
+    if (sourceFilter === 'RACE' && d.isLap) continue;
+    if (sourceFilter === 'LAP' && !d.isLap) continue;
 
     var res, ctx;
     if (mode === 'par-pl') {
@@ -1760,7 +1793,7 @@ function processExcel() {
       levelName: res.levelName, levelCls: res.levelCls,
       strength: res.strength, target: res.target,
       gapSecs: d.secs - res.target,
-      context: ctx
+      context: ctx, isLap: d.isLap
     });
   }
 
@@ -1801,20 +1834,34 @@ function renderExcelResults(mode) {
     { key:'F', label:'FEMININOS' }
   ];
 
-  groups.forEach(function(g){
-    var items = excelResults.filter(function(r){ return r.gender === g.key; });
-    if (items.length === 0) return;
-
-    // Ordenar: por nadador (alfabético), e dentro do nadador por exigência (nível mais forte primeiro)
+  var sortMode = document.getElementById('excel-sort').value;
+  function applySort(items) {
     items.sort(function(a,b){
-      if (a.name !== b.name) return a.name.localeCompare(b.name);
-      if (b.strength !== a.strength) return b.strength - a.strength;
-      return a.eventLabel.localeCompare(b.eventLabel);
+      if (sortMode === 'az') {
+        if (a.name !== b.name) return a.name.localeCompare(b.name, 'pt');
+        return b.strength - a.strength;
+      }
+      if (sortMode === 'za') {
+        if (a.name !== b.name) return b.name.localeCompare(a.name, 'pt');
+        return b.strength - a.strength;
+      }
+      if (sortMode === 'lvl-asc') {
+        if (a.strength !== b.strength) return a.strength - b.strength; // mais baixo primeiro
+        return a.name.localeCompare(b.name, 'pt');
+      }
+      // lvl-desc (predefinido): nível mais alto primeiro
+      if (a.strength !== b.strength) return b.strength - a.strength;
+      return a.name.localeCompare(b.name, 'pt');
     });
+    return items;
+  }
+
+  groups.forEach(function(g){
+    var items = applySort(excelResults.filter(function(r){ return r.gender === g.key; }));
+    if (items.length === 0) return;
 
     var title = document.createElement('div');
     title.className = 'excel-group-title';
-    // contar nadadores distintos neste género
     var distinct = {};
     items.forEach(function(r){ distinct[r.name] = true; });
     title.textContent = g.label + ' · ' + Object.keys(distinct).length + ' nadadores · ' + items.length + ' marcas';
@@ -1824,13 +1871,14 @@ function renderExcelResults(mode) {
       var row = document.createElement('div');
       row.className = 'excel-row border-' + r.levelCls;
       var marginStr = '✓ ' + fmt2(Math.abs(r.gapSecs)) + ' s de margem';
+      var lapTag = r.isLap ? '<span class="lap-tag">PARCIAL (LAP)</span>' : '';
       row.innerHTML =
         '<div class="excel-row-badge bg-' + r.levelCls + '">' + r.levelName + '</div>' +
         '<div class="excel-row-info">' +
           '<div class="excel-row-name">' + r.name +
             (r.birthYear ? ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.birthYear + ')</span>' : '') +
           '</div>' +
-          '<div class="excel-row-sub">' + r.eventLabel + ' · ' + (r.club ? r.club + ' · ' : '') + r.context + ' · Mínimo: ' + secondsToTime(r.target) + '</div>' +
+          '<div class="excel-row-sub">' + r.eventLabel + lapTag + ' · ' + (r.club ? r.club + ' · ' : '') + r.context + ' · Mínimo: ' + secondsToTime(r.target) + '</div>' +
         '</div>' +
         '<div class="excel-row-time">' +
           '<div class="excel-row-time-val">' + r.timeStr + '</div>' +
@@ -1855,6 +1903,76 @@ document.getElementById('btn-excel-print').addEventListener('click', function(){
   document.getElementById('excel-print-footer').innerHTML = 'FPN · PAR Natação Pura 2025–2028 · Análise gerada a ' + dateStr;
   document.body.classList.add('print-excel');
   window.print();
+});
+
+// Re-ordenar em tempo real (sem reprocessar) quando muda o critério de ordenação
+document.getElementById('excel-sort').addEventListener('change', function(){
+  if (excelResults && excelResults.length > 0) {
+    renderExcelResults(document.getElementById('excel-mode').value);
+  }
+});
+// Mudar a origem ou modo implica reprocessar
+document.getElementById('excel-source').addEventListener('change', function(){
+  if (excelData && excelData.length > 0) processExcel();
+});
+
+// Exportar análise para ficheiro Excel
+document.getElementById('btn-excel-export').addEventListener('click', function(){
+  if (!excelResults || excelResults.length === 0) {
+    window.alert('Não há análise para exportar. Carrega um ficheiro e clica em "Analisar Resultados".');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    window.alert('A biblioteca de Excel não carregou. Verifica a ligação à internet.');
+    return;
+  }
+  var mode = document.getElementById('excel-mode').value;
+  var modeLabel = mode === 'par-pl' ? 'PAR Piscina Longa' : 'Projeto Olímpico';
+
+  // Ordenar conforme a vista atual, juntando M e F
+  var sortMode = document.getElementById('excel-sort').value;
+  var rows = excelResults.slice();
+  rows.sort(function(a,b){
+    // primeiro por género (M depois F), depois pelo critério escolhido
+    if (a.gender !== b.gender) return a.gender === 'M' ? -1 : 1;
+    if (sortMode === 'az') return a.name.localeCompare(b.name, 'pt') || (b.strength - a.strength);
+    if (sortMode === 'za') return b.name.localeCompare(a.name, 'pt') || (b.strength - a.strength);
+    if (sortMode === 'lvl-asc') return (a.strength - b.strength) || a.name.localeCompare(b.name, 'pt');
+    return (b.strength - a.strength) || a.name.localeCompare(b.name, 'pt');
+  });
+
+  // Cabeçalhos
+  var aoa = [[
+    'Nível', 'Nadador', 'Ano Nasc.', 'Género', 'Escalão/Contexto',
+    'Prova', 'Origem', 'Tempo', 'Mínimo do Nível', 'Margem (s)'
+  ]];
+  rows.forEach(function(r){
+    aoa.push([
+      r.levelName,
+      r.name,
+      r.birthYear || '',
+      r.genderLabel,
+      r.context,
+      r.eventLabel,
+      r.isLap ? 'Parcial (Lap)' : 'Prova',
+      r.timeStr,
+      secondsToTime(r.target),
+      Number(Math.abs(r.gapSecs).toFixed(2))
+    ]);
+  });
+
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [
+    {wch:11},{wch:26},{wch:10},{wch:10},{wch:20},
+    {wch:16},{wch:14},{wch:12},{wch:14},{wch:11}
+  ];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Análise PAR');
+
+  var now = new Date();
+  var stamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+  var fname = 'Analise_PAR_' + (mode === 'par-pl' ? 'PiscinaLonga' : 'ProjetoOlimpico') + '_' + stamp + '.xlsx';
+  XLSX.writeFile(wb, fname);
 });
 
 updateUIForMode();
