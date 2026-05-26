@@ -630,7 +630,7 @@
     <div class="card excel-toolbar-card">
       <div class="card-title">Importar Folha de Resultados</div>
       <div class="info-block">
-        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong>. No modo <strong>Automático por idade</strong>, cada nadador só pode receber níveis do seu escalão ou superiores (15-16 → JOV/PA-JOV e acima · 17-18 → JUN/PA-JUN e acima · 19-23 → SUB23/PA-SUB23 e acima · +23 → apenas SEN), calculado pelo ano de nascimento. Apresenta-se <strong>apenas o nível mais exigente</strong> de cada nadador; quem não atinge nenhum não aparece.
+        Carrega o ficheiro Excel de rankings no formato <strong>AQUA / Lenex</strong>. No modo <strong>Automático</strong>, cada nadador é avaliado no seu escalão pela idade. Ao escolher os índices de um escalão específico, esses são os índices usados (A/B/C), mas a <strong>regra da idade mantém-se como piso</strong> — nenhum nadador recebe um nível abaixo do permitido pela sua idade. São listadas <strong>todas as marcas com nível</strong> (o mesmo nadador pode repetir-se em várias provas). Apenas nadadores portugueses (POR).
       </div>
       <div class="excel-drop" id="excel-drop">
         <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" />
@@ -650,12 +650,12 @@
           <div class="field" id="excel-field-escalao">
             <label for="excel-escalao">Escalão (PAR-PL)</label>
             <select id="excel-escalao">
-              <option value="AUTO">Automático por idade (regra de escalão)</option>
-              <option value="SEN">Forçar Seniores</option>
-              <option value="SUB23">Forçar Sub-23</option>
-              <option value="PA">Forçar Promessas Aquáticas</option>
-              <option value="JUN">Forçar Juniores</option>
-              <option value="JOV">Forçar Jovens</option>
+              <option value="AUTO">Automático por idade (escalão de cada nadador)</option>
+              <option value="SEN">Índices Seniores (SEN)</option>
+              <option value="SUB23">Índices Sub-23 (SUB23)</option>
+              <option value="PA">Índices Promessas Aquáticas (PA)</option>
+              <option value="JUN">Índices Juniores (JUN)</option>
+              <option value="JOV">Índices Jovens (JOV)</option>
             </select>
           </div>
           <div class="field">
@@ -1465,6 +1465,84 @@ function resolveParPlByAge(gender, eventId, userSecs, birthYear) {
   return null; // sem nível permitido
 }
 
+// Modo "Forçar [escalão]": avalia contra os índices A/B/C do escalão escolhido,
+// mas a regra da idade continua a limitar o nível MÍNIMO permitido (piso).
+// Não exclui nadadores por idade — apenas impede níveis abaixo do piso da idade.
+function resolveParPlForced(gender, eventId, userSecs, escalaoKey, birthYear) {
+  var esc = ESCALOES[escalaoKey];
+  if (!esc) return null;
+  var allTimes = PARPL[gender][eventId];
+  if (!allTimes) return null;
+  var rule = ageRuleFromBirth(birthYear);
+
+  // Índice máximo permitido pela idade (valor de índice mais alto/menos exigente).
+  // Se idade desconhecida, não há piso → permite qualquer nível do escalão.
+  var maxIndiceAllowed = Infinity;
+  var onlySen = false;
+  if (rule) {
+    var floorLevel = PARPL_LADDER[rule.maxLadderIdx];
+    maxIndiceAllowed = floorLevel.indice;
+    onlySen = rule.onlySen;
+  }
+
+  var levels = esc.levels.map(function(lv){ return { name:lv.name, cls:lv.cls, indice:lv.indice, grupo:lv.grupo || escalaoKey, time: allTimes[lv.idx] }; });
+
+  for (var i = 0; i < levels.length; i++) {
+    var lv = levels[i];
+    // Piso da idade: não permitir índices acima (menos exigentes) do que a idade autoriza
+    if (lv.indice > maxIndiceAllowed) continue;
+    // >23 só pode níveis do grupo SEN
+    if (onlySen && escalaoKey !== 'SEN') continue;
+    if (userSecs <= lv.time) {
+      return { levelName: lv.name, levelCls: lv.cls, target: lv.time, achieved: true, strength: 300 - lv.indice };
+    }
+  }
+  return null; // sem nível (ou todos cortados pelo piso da idade)
+}
+
+// A que escalão (por idade) pertence um ano de nascimento — para o modo "Forçar".
+// Devolve a chave do escalão (SEN/SUB23/JUN/JOV) ou null se idade desconhecida.
+function escalaoFromBirth(birthYear) {
+  if (!birthYear) return null;
+  if (birthYear >= 2010) return 'JOV';          // 15-16
+  if (birthYear === 2008 || birthYear === 2009) return 'JUN'; // 17-18
+  if (birthYear >= 2003 && birthYear <= 2007) return 'SUB23'; // 19-23
+  return 'SEN';                                  // >23
+}
+
+// PA inclui as três faixas PA-SUB23/PA-JUN/PA-JOV; mapear idade para o nível PA correto.
+function paLevelFromBirth(birthYear) {
+  if (!birthYear) return null;
+  if (birthYear >= 2010) return 'pa-jov';
+  if (birthYear === 2008 || birthYear === 2009) return 'pa-jun';
+  if (birthYear >= 2003 && birthYear <= 2007) return 'pa-sub23';
+  return null; // PA não se aplica a +23
+}
+
+// Verifica se um nadador (pela idade) pertence ao escalão forçado.
+function belongsToForced(birthYear, forcedKey) {
+  var esc = escalaoFromBirth(birthYear);
+  if (forcedKey === 'PA') return paLevelFromBirth(birthYear) !== null;
+  return esc === forcedKey;
+}
+
+// Resolve o nível PA correto para a faixa etária do nadador (modo "Só PA").
+function resolvePAByAge(gender, eventId, userSecs, birthYear) {
+  var allTimes = PARPL[gender][eventId];
+  if (!allTimes) return null;
+  var paId = paLevelFromBirth(birthYear); // pa-sub23 / pa-jun / pa-jov
+  if (!paId) return null;
+  // localizar na ladder
+  var lv = null;
+  for (var i = 0; i < PARPL_LADDER.length; i++) { if (PARPL_LADDER[i].cls === paId) { lv = PARPL_LADDER[i]; break; } }
+  if (!lv) return null;
+  var target = allTimes[lv.idx];
+  if (userSecs <= target) {
+    return { levelName: lv.name, levelCls: lv.cls, target: target, achieved: true, strength: 300 - lv.indice };
+  }
+  return { levelName: 'Abaixo do ' + lv.name, levelCls: 'sub', target: target, achieved: false, strength: -1 };
+}
+
 function getBirthYear(val) {
   if (val === null || val === undefined || val === '') return null;
   // Real Date object (quando cellDates:true)
@@ -1641,32 +1719,40 @@ function processExcel() {
   var escalaoOpt = document.getElementById('excel-escalao').value;
   var genderFilter = document.getElementById('excel-genderfilter').value;
 
-  // Evaluate every mark, but keep only the BEST (most demanding) achieved level per swimmer.
-  var bestByName = {}; // name -> best result object
-  var totalSwimmers = {}; // count distinct swimmers evaluated
+  // Recolhe TODAS as marcas com nível (repete nadador por cada prova).
+  var allResults = [];
+  var totalSwimmers = {};   // nadadores avaliados (após filtros de género/escalão)
+  var levelSwimmers = {};   // nadadores com pelo menos um nível
 
   for (var i = 0; i < excelData.length; i++) {
     var d = excelData[i];
     if (genderFilter !== 'ALL' && d.gender !== genderFilter) continue;
-    totalSwimmers[d.name] = true;
 
-    var res, ctx, escKey;
+    var res, ctx;
     if (mode === 'par-pl') {
       if (escalaoOpt === 'AUTO') {
         // Regra por idade: cada faixa só pode níveis do seu escalão ou acima
         res = resolveParPlByAge(d.gender, d.eventId, d.secs, d.birthYear);
         ctx = res ? res.cat : '';
       } else {
-        res = resolveParPlLevel(d.gender, d.eventId, d.secs, escalaoOpt);
+        // Forçar escalão: escolhe a coluna de índices (A/B/C) desse escalão.
+        // A regra da idade continua a aplicar-se como PISO (nível mínimo),
+        // mas NÃO exclui nadadores por idade.
+        res = resolveParPlForced(d.gender, d.eventId, d.secs, escalaoOpt, d.birthYear);
         ctx = ESCALOES[escalaoOpt] ? ESCALOES[escalaoOpt].label : escalaoOpt;
       }
     } else {
       res = resolvePOLevel(d.gender, d.eventId, d.secs);
       ctx = 'Projeto Olímpico';
     }
-    if (!res || !res.achieved) continue; // ignore marks that reach no level
 
-    var candidate = {
+    // Conta o nadador como avaliado (passou pelos filtros aplicáveis)
+    totalSwimmers[d.name] = true;
+
+    if (!res || !res.achieved) continue; // ignora marcas sem nível
+
+    levelSwimmers[d.name] = true;
+    allResults.push({
       gender: d.gender,
       genderLabel: d.gender === 'M' ? 'Masculino' : 'Feminino',
       name: d.name, club: d.club, birthYear: d.birthYear,
@@ -1675,17 +1761,12 @@ function processExcel() {
       strength: res.strength, target: res.target,
       gapSecs: d.secs - res.target,
       context: ctx
-    };
-
-    var prev = bestByName[d.name];
-    if (!prev || candidate.strength > prev.strength) {
-      bestByName[d.name] = candidate;
-    }
+    });
   }
 
-  // Build final list: one entry per swimmer, only those WITH a level
-  excelResults = Object.keys(bestByName).map(function(k){ return bestByName[k]; });
+  excelResults = allResults;
   excelResults._totalSwimmers = Object.keys(totalSwimmers).length;
+  excelResults._levelSwimmers = Object.keys(levelSwimmers).length;
 
   renderExcelResults(mode);
 }
@@ -1696,21 +1777,23 @@ function renderExcelResults(mode) {
   container.innerHTML = '';
 
   var totalSwimmers = excelResults._totalSwimmers || 0;
+  var levelSwimmers = excelResults._levelSwimmers || 0;
 
   if (excelResults.length === 0) {
     summary.style.display = 'flex';
     summary.innerHTML =
       '<div class="excel-stat"><div class="excel-stat-num">' + totalSwimmers + '</div><div class="excel-stat-lbl">Nadadores analisados</div></div>' +
-      '<div class="excel-stat"><div class="excel-stat-num">0</div><div class="excel-stat-lbl">Com nível atingido</div></div>';
-    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Nenhum nadador atingiu um nível com as opções escolhidas.</div></div>';
+      '<div class="excel-stat"><div class="excel-stat-num">0</div><div class="excel-stat-lbl">Marcas com nível</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Nenhuma marca atingiu um nível com as opções escolhidas.</div></div>';
     return;
   }
 
-  // Summary
+  // Summary: nadadores analisados · nadadores com nível · total de marcas com nível
   summary.style.display = 'flex';
   summary.innerHTML =
     '<div class="excel-stat"><div class="excel-stat-num">' + totalSwimmers + '</div><div class="excel-stat-lbl">Nadadores analisados</div></div>' +
-    '<div class="excel-stat"><div class="excel-stat-num">' + excelResults.length + '</div><div class="excel-stat-lbl">Com nível atingido</div></div>';
+    '<div class="excel-stat"><div class="excel-stat-num">' + levelSwimmers + '</div><div class="excel-stat-lbl">Nadadores com nível</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num">' + excelResults.length + '</div><div class="excel-stat-lbl">Marcas com nível</div></div>';
 
   // Split by gender
   var groups = [
@@ -1722,16 +1805,19 @@ function renderExcelResults(mode) {
     var items = excelResults.filter(function(r){ return r.gender === g.key; });
     if (items.length === 0) return;
 
-    // Sort by level strength desc, then by gap (closer to next), then name
+    // Ordenar: por nadador (alfabético), e dentro do nadador por exigência (nível mais forte primeiro)
     items.sort(function(a,b){
-      if (b.strength !== a.strength) return b.strength - a.strength;
       if (a.name !== b.name) return a.name.localeCompare(b.name);
-      return 0;
+      if (b.strength !== a.strength) return b.strength - a.strength;
+      return a.eventLabel.localeCompare(b.eventLabel);
     });
 
     var title = document.createElement('div');
     title.className = 'excel-group-title';
-    title.textContent = g.label + ' (' + items.length + ')';
+    // contar nadadores distintos neste género
+    var distinct = {};
+    items.forEach(function(r){ distinct[r.name] = true; });
+    title.textContent = g.label + ' · ' + Object.keys(distinct).length + ' nadadores · ' + items.length + ' marcas';
     container.appendChild(title);
 
     items.forEach(function(r){
@@ -1744,7 +1830,7 @@ function renderExcelResults(mode) {
           '<div class="excel-row-name">' + r.name +
             (r.birthYear ? ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.birthYear + ')</span>' : '') +
           '</div>' +
-          '<div class="excel-row-sub">' + (r.club ? r.club + ' · ' : '') + r.context + ' · Melhor nível em ' + r.eventLabel + '</div>' +
+          '<div class="excel-row-sub">' + r.eventLabel + ' · ' + (r.club ? r.club + ' · ' : '') + r.context + ' · Mínimo: ' + secondsToTime(r.target) + '</div>' +
         '</div>' +
         '<div class="excel-row-time">' +
           '<div class="excel-row-time-val">' + r.timeStr + '</div>' +
