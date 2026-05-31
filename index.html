@@ -775,7 +775,7 @@
     <div class="card ranking-toolbar-card">
       <div class="card-title">Ranking pelo Nível Pretendido</div>
       <div class="info-block">
-        Carrega o ficheiro Excel no separador <strong>Importar Excel</strong> primeiro. Aqui escolhes um <strong>nível-alvo</strong> e a app diz-te quem já o atingiu (com a margem de pontos acima) e quem ainda não — ordenado pelos <strong>pontos que faltam</strong>. Os pontos World Aquatics são lidos da coluna <em>PTS_FINA</em> do ficheiro; quando ausente, são calculados pela fórmula oficial.
+        Carrega o ficheiro Excel no separador <strong>Importar Excel</strong> primeiro. Aqui escolhes um <strong>nível-alvo</strong> e a app diz-te quem já o atingiu (com a margem em pontos) e quem ainda não — ordenado pelos <strong>pontos que faltam</strong>. Cada marca é avaliada contra o índice <strong>da sua própria prova</strong>, usando a marca <strong>JO28 dessa prova × género</strong> como referência (−40p para índice 4, −60p para índice 6, …, −270p para índice 27). Os pontos World Aquatics vêm da coluna <em>PTS_FINA</em> do ficheiro; quando ausente, são calculados pela fórmula oficial.
       </div>
       <div class="form-grid">
         <div class="field">
@@ -2180,28 +2180,40 @@ function computeRanking() {
   var target = findTargetLevel(targetCls);
   if (!target) return;
 
-  // Para cada nadador (após filtros), encontra a marca que dá MAIS pontos.
-  // (Os pontos refletem a melhor performance global do nadador.)
-  var bestByName = {}; // name -> { ..., bestPts, mark }
+  // Para cada nadador, avaliar cada uma das suas marcas contra o ÍNDICE DESSA PROVA.
+  // O nadador "tem o nível" se ALGUMA marca cumpre o índice na sua prova específica.
+  // Margem em pontos = pts_marca − pts_alvo, onde pts_alvo é calculado pela fórmula
+  // WA aplicada ao TEMPO do índice nessa prova × género.
+  //
+  // Para cada nadador guardamos o "melhor diff" (margem em pontos): a marca que está
+  // mais acima do índice da sua prova (ou menos abaixo, se nenhuma cumpre).
+  var bestByName = {}; // name -> { ..., bestDiff, bestPts, targetPtsInEvent, mark info }
 
   for (var i = 0; i < excelData.length; i++) {
     var d = excelData[i];
-    // filtro de género
     if (genero !== 'ALL' && d.gender !== genero) continue;
-    // filtro de origem
     if (sourceFilter === 'RACE' && d.isLap) continue;
     if (sourceFilter === 'LAP' && !d.isLap) continue;
-    // filtro de escalão por idade
     if (escalaoOpt !== 'ALL') {
       var esc = swimmerEscalao(d.birthYear);
       if (esc !== escalaoOpt) continue;
     }
 
-    var pts = pointsForMark(d);
-    if (pts === null) continue;
+    // Tempo do índice-alvo nesta prova × género
+    var targetTimes = PARPL[d.gender] && PARPL[d.gender][d.eventId];
+    if (!targetTimes) continue;
+    var targetTimeForEvent = targetTimes[target.idx];
+    if (targetTimeForEvent == null) continue;
+
+    var ptsMark = pointsForMark(d);
+    if (ptsMark === null) continue;
+    var ptsTarget = waPointsForMark(d.gender, d.eventId, targetTimeForEvent);
+    if (ptsTarget === null) continue;
+
+    var diff = ptsMark - ptsTarget; // positivo = acima do índice nessa prova
 
     var key = d.name;
-    if (!bestByName[key] || pts > bestByName[key].bestPts) {
+    if (!bestByName[key] || diff > bestByName[key].bestDiff) {
       bestByName[key] = {
         name: d.name,
         gender: d.gender,
@@ -2209,33 +2221,31 @@ function computeRanking() {
         club: d.club,
         birthYear: d.birthYear,
         eventLabel: d.eventLabel,
+        eventId: d.eventId,
         timeStr: d.timeStr,
         isLap: d.isLap,
-        bestPts: pts,
+        bestPts: ptsMark,
+        targetPtsInEvent: ptsTarget,
+        targetTimeInEvent: targetTimeForEvent,
+        bestDiff: diff,
         ptsSource: d.ptsFina ? 'PTS_FINA' : 'WA-calc'
       };
     }
   }
 
-  // Pontos do nível-alvo: 1000 − indice·10  (Índice 4 = 960p, Índice 27 = 730p)
-  var targetPts = 1000 - target.indice * 10;
-
-  // Separar em "tem" vs "não tem" e ordenar
+  // Separar e ordenar
   var has = [], miss = [];
   Object.keys(bestByName).forEach(function(k){
     var r = bestByName[k];
-    r.diff = r.bestPts - targetPts;
-    if (r.bestPts >= targetPts) has.push(r); else miss.push(r);
+    if (r.bestDiff >= 0) has.push(r); else miss.push(r);
   });
-  // "Tem": ordenar por margem desc (quem está mais acima primeiro)
-  has.sort(function(a,b){ return b.diff - a.diff; });
-  // "Não tem": ordenar por pontos que faltam asc (quem está mais perto primeiro)
-  miss.sort(function(a,b){ return b.diff - a.diff; }); // diff negativo: maior (mais perto) primeiro
+  has.sort(function(a,b){ return b.bestDiff - a.bestDiff; });   // maior margem primeiro
+  miss.sort(function(a,b){ return b.bestDiff - a.bestDiff; }); // menos negativo (mais perto) primeiro
 
-  renderRanking(target, targetPts, has, miss, { genero:genero, escalao:escalaoOpt, source:sourceFilter });
+  renderRanking(target, has, miss, { genero:genero, escalao:escalaoOpt, source:sourceFilter });
 }
 
-function renderRanking(target, targetPts, has, miss, opts) {
+function renderRanking(target, has, miss, opts) {
   var summary = document.getElementById('rank-summary');
   var container = document.getElementById('rank-results');
   container.innerHTML = '';
@@ -2244,9 +2254,9 @@ function renderRanking(target, targetPts, has, miss, opts) {
   summary.style.display = 'flex';
   summary.innerHTML =
     '<div class="excel-stat"><div class="excel-stat-num">' + total + '</div><div class="excel-stat-lbl">Nadadores avaliados</div></div>' +
-    '<div class="excel-stat"><div class="excel-stat-num" style="color:#1A6B3C">' + has.length + '</div><div class="excel-stat-lbl">Já têm o nível</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num" style="color:#1A6B3C">' + has.length + '</div><div class="excel-stat-lbl">Já têm ' + target.name + '</div></div>' +
     '<div class="excel-stat"><div class="excel-stat-num" style="color:#92400E">' + miss.length + '</div><div class="excel-stat-lbl">Ainda não têm</div></div>' +
-    '<div class="excel-stat"><div class="excel-stat-num">' + targetPts + 'p</div><div class="excel-stat-lbl">Mín. ' + target.name + '</div></div>';
+    '<div class="excel-stat"><div class="excel-stat-num">−' + (target.indice * 10) + 'p</div><div class="excel-stat-lbl">Abaixo da JO28</div></div>';
 
   if (total === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Nenhum nadador corresponde aos filtros escolhidos.</div></div>';
@@ -2256,13 +2266,13 @@ function renderRanking(target, targetPts, has, miss, opts) {
   function buildRow(r, pos, kind) {
     var row = document.createElement('div');
     row.className = 'rank-row ' + kind;
-    var diff = r.diff;
+    var diff = r.bestDiff;
     var diffStr, diffLbl;
     if (kind === 'has') {
       diffStr = '+' + diff + 'p';
-      diffLbl = 'margem acima';
+      diffLbl = 'acima do índice';
     } else {
-      diffStr = diff + 'p'; // already negative
+      diffStr = diff + 'p';
       diffLbl = 'faltam ' + Math.abs(diff) + 'p';
     }
     var lapTag = r.isLap ? ' <span class="lap-tag">PARCIAL</span>' : '';
@@ -2276,11 +2286,13 @@ function renderRanking(target, targetPts, has, miss, opts) {
         '<div class="rank-row-name">' + r.name +
           ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.genderLabel.charAt(0) + ' · ' + byStr + ')</span>' +
         '</div>' +
-        '<div class="rank-row-sub">' + clubStr + 'Melhor: ' + r.eventLabel + lapTag + ' · ' + r.timeStr + '</div>' +
+        '<div class="rank-row-sub">' + clubStr + 'Melhor: ' + r.eventLabel + lapTag + ' · ' + r.timeStr +
+          ' · Índice ' + target.name + ' = ' + secondsToTime(r.targetTimeInEvent) + ' (' + r.targetPtsInEvent + 'p)' +
+        '</div>' +
       '</div>' +
       '<div class="rank-row-time">' +
         r.bestPts + 'p' + srcMark +
-        '<small>pontos WA</small>' +
+        '<small>pontos da marca</small>' +
       '</div>' +
       '<div class="rank-row-pts">' +
         '<div class="rank-row-pts-big">' + diffStr + '</div>' +
@@ -2342,13 +2354,12 @@ document.getElementById('btn-rank-export').addEventListener('click', function(){
     window.alert('A biblioteca de Excel não carregou.');
     return;
   }
-  // Recalcular para garantir consistência
+  // Recalcular com a mesma lógica per-event de computeRanking()
   var genero = document.getElementById('rank-genero').value;
   var escalaoOpt = document.getElementById('rank-escalao').value;
   var targetCls = document.getElementById('rank-target').value;
   var sourceFilter = document.getElementById('rank-source').value;
   var target = findTargetLevel(targetCls);
-  var targetPts = 1000 - target.indice * 10;
 
   var bestByName = {};
   for (var i = 0; i < excelData.length; i++) {
@@ -2357,32 +2368,44 @@ document.getElementById('btn-rank-export').addEventListener('click', function(){
     if (sourceFilter === 'RACE' && d.isLap) continue;
     if (sourceFilter === 'LAP' && !d.isLap) continue;
     if (escalaoOpt !== 'ALL') { if (swimmerEscalao(d.birthYear) !== escalaoOpt) continue; }
-    var pts = pointsForMark(d);
-    if (pts === null) continue;
-    if (!bestByName[d.name] || pts > bestByName[d.name].bestPts) {
-      bestByName[d.name] = { name:d.name, gender:d.gender, genderLabel: d.gender==='M'?'Masculino':'Feminino',
-        club:d.club, birthYear:d.birthYear, eventLabel:d.eventLabel, timeStr:d.timeStr, isLap:d.isLap,
-        bestPts:pts, ptsSource: d.ptsFina ? 'PTS_FINA' : 'WA-calc' };
+    var targetTimes = PARPL[d.gender] && PARPL[d.gender][d.eventId];
+    if (!targetTimes) continue;
+    var tgtTime = targetTimes[target.idx];
+    if (tgtTime == null) continue;
+    var ptsMark = pointsForMark(d);
+    if (ptsMark === null) continue;
+    var ptsTarget = waPointsForMark(d.gender, d.eventId, tgtTime);
+    if (ptsTarget === null) continue;
+    var diff = ptsMark - ptsTarget;
+    if (!bestByName[d.name] || diff > bestByName[d.name].bestDiff) {
+      bestByName[d.name] = {
+        name:d.name, gender:d.gender, genderLabel: d.gender==='M'?'Masculino':'Feminino',
+        club:d.club, birthYear:d.birthYear, eventLabel:d.eventLabel, eventId:d.eventId,
+        timeStr:d.timeStr, isLap:d.isLap, bestPts:ptsMark,
+        targetPtsInEvent: ptsTarget, targetTimeInEvent: tgtTime,
+        bestDiff: diff, ptsSource: d.ptsFina ? 'PTS_FINA' : 'WA-calc'
+      };
     }
   }
   var has=[], miss=[];
   Object.keys(bestByName).forEach(function(k){
-    var r = bestByName[k]; r.diff = r.bestPts - targetPts;
-    (r.bestPts >= targetPts ? has : miss).push(r);
+    var r = bestByName[k];
+    (r.bestDiff >= 0 ? has : miss).push(r);
   });
-  has.sort(function(a,b){return b.diff-a.diff;});
-  miss.sort(function(a,b){return b.diff-a.diff;});
+  has.sort(function(a,b){return b.bestDiff-a.bestDiff;});
+  miss.sort(function(a,b){return b.bestDiff-a.bestDiff;});
 
   var aoa = [
-    ['Ranking pelo Nível ' + target.name + ' (mínimo ' + targetPts + ' pontos WA)'],
+    ['Ranking pelo Nível ' + target.name + ' (Índice ' + target.indice + ' · −' + (target.indice*10) + 'p abaixo da marca JO28 de cada prova)'],
     [],
-    ['Posição','Estado','Nadador','Género','Ano Nasc.','Clube','Melhor Prova','Tempo','Origem','Pontos WA','Origem Pontos','Margem (pontos)']
+    ['Posição','Estado','Nadador','Género','Ano Nasc.','Clube','Melhor Prova','Tempo','Pontos Marca','Tempo do Índice','Pontos do Índice','Margem (pontos)','Origem Pontos','Origem Marca']
   ];
-  has.forEach(function(r,i){ aoa.push([i+1,'JÁ TEM',r.name,r.genderLabel,r.birthYear||'',r.club||'',r.eventLabel,r.timeStr,r.isLap?'Parcial (Lap)':'Prova',r.bestPts,r.ptsSource,'+'+r.diff]); });
-  miss.forEach(function(r,i){ aoa.push([i+1,'FALTA',r.name,r.genderLabel,r.birthYear||'',r.club||'',r.eventLabel,r.timeStr,r.isLap?'Parcial (Lap)':'Prova',r.bestPts,r.ptsSource,r.diff]); });
+  function srcLabel(r){ return r.isLap?'Parcial (Lap)':'Prova'; }
+  has.forEach(function(r,i){ aoa.push([i+1,'JÁ TEM',r.name,r.genderLabel,r.birthYear||'',r.club||'',r.eventLabel,r.timeStr,r.bestPts,secondsToTime(r.targetTimeInEvent),r.targetPtsInEvent,'+'+r.bestDiff,r.ptsSource,srcLabel(r)]); });
+  miss.forEach(function(r,i){ aoa.push([i+1,'FALTA',r.name,r.genderLabel,r.birthYear||'',r.club||'',r.eventLabel,r.timeStr,r.bestPts,secondsToTime(r.targetTimeInEvent),r.targetPtsInEvent,r.bestDiff,r.ptsSource,srcLabel(r)]); });
 
   var ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:8},{wch:9},{wch:26},{wch:10},{wch:10},{wch:10},{wch:16},{wch:11},{wch:14},{wch:10},{wch:13},{wch:11}];
+  ws['!cols'] = [{wch:8},{wch:9},{wch:26},{wch:10},{wch:10},{wch:10},{wch:16},{wch:11},{wch:11},{wch:14},{wch:13},{wch:13},{wch:13},{wch:14}];
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Ranking ' + target.name);
   var now = new Date();
