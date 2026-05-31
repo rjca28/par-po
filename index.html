@@ -326,14 +326,16 @@
 
     /* When printing the consulta view */
     body.print-consulta #view-historico,
-    body.print-consulta #view-excel { display: none !important; }
+    body.print-consulta #view-excel,
+    body.print-consulta #view-ranking { display: none !important; }
     body.print-consulta .card, body.print-consulta .empty-state { display: none !important; }
     body.print-consulta .results { display: block !important; }
     body.print-consulta .results:not(.show) { display: none !important; }
 
     /* When printing the histórico view */
     body.print-hist #view-consulta,
-    body.print-hist #view-excel { display: none !important; }
+    body.print-hist #view-excel,
+    body.print-hist #view-ranking { display: none !important; }
     body.print-hist .hist-toolbar-card { display: none !important; }
     body.print-hist .empty-state { display: none !important; }
     body.print-hist .hist-print-header {
@@ -352,7 +354,8 @@
 
     /* When printing the excel view */
     body.print-excel #view-consulta,
-    body.print-excel #view-historico { display: none !important; }
+    body.print-excel #view-historico,
+    body.print-excel #view-ranking { display: none !important; }
     body.print-excel .excel-toolbar-card { display: none !important; }
     body.print-excel .empty-state { display: none !important; }
     body.print-excel .excel-print-header {
@@ -368,6 +371,17 @@
     }
     body.print-excel .excel-row { box-shadow: none !important; border: 1px solid #CBD5E1; border-left-width: 5px; }
     body.print-excel .excel-summary { box-shadow: none !important; border: 1px solid #CBD5E1; }
+
+    /* Ranking print */
+    body.print-rank #view-consulta,
+    body.print-rank #view-historico,
+    body.print-rank #view-excel { display: none !important; }
+    body.print-rank .ranking-toolbar-card { display: none !important; }
+    body.print-rank .empty-state { display: none !important; }
+    body.print-rank .rank-print-header { display: block !important; }
+    body.print-rank .print-footer { display: block !important; }
+    body.print-rank .rank-row { box-shadow: none !important; border: 1px solid #CBD5E1; border-left-width: 5px; }
+    body.print-rank .excel-summary { box-shadow: none !important; border: 1px solid #CBD5E1; }
 
     .level-banner {
       box-shadow: none !important;
@@ -545,6 +559,52 @@
   }
   .btn-excel { background: #1A6B3C; color: #fff; }
   .btn-excel:hover { background: #14572F; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+  /* RANKING DE NÍVEL */
+  .rank-section-title {
+    font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+    margin: 22px 0 10px; padding-left: 4px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .rank-section-title .count {
+    font-size: 11.5px; font-weight: 600; color: var(--gray-500);
+    letter-spacing: 0.04em;
+  }
+  .rank-section-title.has { color: var(--green); }
+  .rank-section-title.miss { color: #92400E; }
+  .rank-row {
+    background: white; border-radius: 10px; box-shadow: var(--shadow-sm);
+    border-left: 5px solid var(--gray-300);
+    padding: 12px 16px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 36px 1fr auto auto;
+    align-items: center; gap: 14px;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .rank-row.has { border-left-color: #1A6B3C; background: linear-gradient(to right, #F0FDF4 0%, white 60%); }
+  .rank-row.miss { border-left-color: #C2A158; }
+  .rank-pos {
+    font-size: 13px; font-weight: 800; color: var(--gray-500);
+    text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .rank-row-info { min-width: 0; }
+  .rank-row-name { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+  .rank-row-sub { font-size: 11.5px; color: var(--gray-500); margin-top: 2px; }
+  .rank-row-pts { text-align: right; font-variant-numeric: tabular-nums; }
+  .rank-row-pts-big { font-size: 17px; font-weight: 800; color: var(--gray-900); }
+  .rank-row-pts-lbl { font-size: 10.5px; color: var(--gray-500); font-weight: 600; }
+  .rank-row.has .rank-row-pts-big { color: #1A6B3C; }
+  .rank-row.miss .rank-row-pts-big { color: #92400E; }
+  .rank-row-time {
+    font-size: 12px; color: var(--gray-700);
+    font-variant-numeric: tabular-nums; font-weight: 600;
+  }
+  .rank-row-time small { display: block; color: var(--gray-500); font-weight: 500; font-size: 10.5px; }
+  .rank-print-header { display: none; font-size: 14pt; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+  @media (max-width: 600px) {
+    .rank-row { grid-template-columns: 28px 1fr auto; gap: 8px; }
+    .rank-row-time { display: none; }
+  }
   @media (max-width: 600px) {
     .excel-row { grid-template-columns: auto 1fr auto; gap: 10px; }
     .excel-row-time { display: none; }
@@ -568,6 +628,7 @@
     <button class="tab active" data-mode="par-pl">PAR Piscina Longa<small>SEN · SUB23 · PA · JUN · JOV</small></button>
     <button class="tab" data-mode="po">Projeto Olímpico<small>Medalhado · Top Elite · Elite · AQ</small></button>
     <button class="tab" data-mode="excel">Importar Excel<small>Folha de Resultados</small></button>
+    <button class="tab" data-mode="ranking">Ranking de Nível<small>Quem tem · quem falta</small></button>
     <button class="tab" data-mode="hist">Histórico<small>Consultas guardadas</small></button>
   </div>
 
@@ -707,6 +768,76 @@
     <div class="excel-summary" id="excel-summary" style="display:none"></div>
     <div id="excel-results"></div>
     <div class="print-footer" id="excel-print-footer"></div>
+  </div>
+
+  <!-- ===== VIEW: RANKING DE NÍVEL ===== -->
+  <div id="view-ranking" style="display:none">
+    <div class="card ranking-toolbar-card">
+      <div class="card-title">Ranking pelo Nível Pretendido</div>
+      <div class="info-block">
+        Carrega o ficheiro Excel no separador <strong>Importar Excel</strong> primeiro. Aqui escolhes um <strong>nível-alvo</strong> e a app diz-te quem já o atingiu (com a margem de pontos acima) e quem ainda não — ordenado pelos <strong>pontos que faltam</strong>. Os pontos World Aquatics são lidos da coluna <em>PTS_FINA</em> do ficheiro; quando ausente, são calculados pela fórmula oficial.
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="rank-genero">Género</label>
+          <select id="rank-genero">
+            <option value="ALL">Ambos (M e F)</option>
+            <option value="M">Apenas Masculino</option>
+            <option value="F">Apenas Feminino</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rank-escalao">Escalão</label>
+          <select id="rank-escalao">
+            <option value="ALL">Todos os escalões</option>
+            <option value="SEN">Seniores (&gt;23)</option>
+            <option value="SUB23">Sub-23 (19-23)</option>
+            <option value="JUN">Juniores (17-18)</option>
+            <option value="JOV">Jovens (15-16)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rank-target">Nível-alvo (PAR-PL)</label>
+          <select id="rank-target">
+            <option value="sen-a">SEN-A · Índice 4 (−40p)</option>
+            <option value="sen-b">SEN-B · Índice 6 (−60p)</option>
+            <option value="sub23-a">SUB23-A · Índice 7 (−70p)</option>
+            <option value="sen-c">SEN-C · Índice 8 (−80p)</option>
+            <option value="sub23-b">SUB23-B · Índice 9 (−90p)</option>
+            <option value="sub23-c">SUB23-C · Índice 11 (−110p)</option>
+            <option value="pa-sub23">PA-SUB23 · Índice 13 (−130p)</option>
+            <option value="jun-a">JUN-A · Índice 15 (−150p)</option>
+            <option value="jun-b">JUN-B · Índice 17 (−170p)</option>
+            <option value="jun-c">JUN-C · Índice 19 (−190p)</option>
+            <option value="pa-jun">PA-JUN · Índice 20 (−200p)</option>
+            <option value="jov-a">JOV-A · Índice 21 (−210p)</option>
+            <option value="jov-b">JOV-B · Índice 23 (−230p)</option>
+            <option value="jov-c">JOV-C · Índice 25 (−250p)</option>
+            <option value="pa-jov">PA-JOV · Índice 27 (−270p)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rank-source">Origem da marca</label>
+          <select id="rank-source">
+            <option value="RACE">Apenas provas (recomendado)</option>
+            <option value="ALL">Todas (prova + parcial Lap)</option>
+            <option value="LAP">Apenas parciais (Lap)</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-rank-calc">Calcular Ranking</button>
+        <button class="btn btn-print" id="btn-rank-print">🖨 Imprimir / PDF</button>
+        <button class="btn btn-excel" id="btn-rank-export">📊 Exportar Excel</button>
+        <button class="btn btn-secondary" id="btn-rank-clear">Limpar</button>
+      </div>
+      <div id="rank-warning"></div>
+    </div>
+
+    <div class="rank-print-header" id="rank-print-header"></div>
+    <div class="excel-summary" id="rank-summary" style="display:none"></div>
+    <div id="rank-results"></div>
+    <div class="print-footer" id="rank-print-footer"></div>
   </div>
 
   <!-- ===== VIEW: HISTÓRICO ===== -->
@@ -975,12 +1106,14 @@ function updateUIForMode() {
   var viewConsulta = document.getElementById('view-consulta');
   var viewHist = document.getElementById('view-historico');
   var viewExcel = document.getElementById('view-excel');
+  var viewRanking = document.getElementById('view-ranking');
   var escalaoField = document.getElementById('field-escalao');
   var infoBlock = document.getElementById('info-block');
 
   viewConsulta.style.display = 'none';
   viewHist.style.display = 'none';
   viewExcel.style.display = 'none';
+  viewRanking.style.display = 'none';
 
   if (currentMode === 'hist') {
     viewHist.style.display = 'block';
@@ -989,6 +1122,10 @@ function updateUIForMode() {
   }
   if (currentMode === 'excel') {
     viewExcel.style.display = 'block';
+    return;
+  }
+  if (currentMode === 'ranking') {
+    viewRanking.style.display = 'block';
     return;
   }
 
@@ -1680,6 +1817,7 @@ function parseWorkbook(wb) {
         if (cell === 'NATION') col.nation = c;
         if (cell === 'CLUBCODE') col.club = c;
         if (cell === 'SWIMTIME') col.swim = c;
+        if (cell === 'PTS_FINA') col.ptsFina = c;
       }
       if (col.gender !== undefined && col.swim !== undefined) { headerRow = r; break; }
     }
@@ -1704,6 +1842,14 @@ function parseWorkbook(wb) {
       // chave inclui a origem (Lap vs prova) para não fundir os dois tipos
       var key = g + '|' + eventId + '|' + String(fullname).trim() + '|' + (isLap ? 'LAP' : 'RACE');
       if (best[key] === undefined || secs < best[key].secs) {
+        var ptsFina = null;
+        if (col.ptsFina !== undefined) {
+          var pv = row[col.ptsFina];
+          if (pv !== null && pv !== undefined && pv !== '') {
+            var pn = Number(String(pv).replace(',', '.'));
+            if (!isNaN(pn) && pn > 0) ptsFina = pn;
+          }
+        }
         best[key] = {
           gender: g,
           eventId: eventId,
@@ -1713,7 +1859,8 @@ function parseWorkbook(wb) {
           birthYear: getBirthYear(row[col.birth]),
           secs: secs,
           timeStr: secondsToTime(secs),
-          isLap: isLap
+          isLap: isLap,
+          ptsFina: ptsFina
         };
       }
     }
@@ -1973,6 +2120,279 @@ document.getElementById('btn-excel-export').addEventListener('click', function()
   var stamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
   var fname = 'Analise_PAR_' + (mode === 'par-pl' ? 'PiscinaLonga' : 'ProjetoOlimpico') + '_' + stamp + '.xlsx';
   XLSX.writeFile(wb, fname);
+});
+
+// ══ RANKING DE NÍVEL ════════════════════════════════════════════════════════
+// World Aquatics Base Times — LCM 2025 (segundos). Usados para calcular pontos
+// quando a coluna PTS_FINA não existe no ficheiro.
+var WA_BASETIMES_LCM = {
+  M: { '50L':20.91, '100L':46.40, '200L':102.00, '400L':220.07, '800L':452.12, '1500L':870.67,
+       '50C':23.55, '100C':51.60, '200C':111.92, '50B':25.95, '100B':56.88, '200B':125.48,
+       '50M':22.27, '100M':49.45, '200M':110.34, '200E':114.00, '400E':242.50 },
+  F: { '50L':23.61, '100L':51.71, '200L':112.23, '400L':235.38, '800L':484.79, '1500L':920.48,
+       '50C':26.86, '100C':57.13, '200C':123.14, '50B':29.16, '100B':64.13, '200B':137.55,
+       '50M':24.43, '100M':55.18, '200M':121.81, '200E':126.12, '400E':264.38 }
+};
+
+// Pontos World Aquatics: P = floor(1000 * (BT / T)^3)
+function waPointsForMark(gender, eventId, secs) {
+  var bt = WA_BASETIMES_LCM[gender] && WA_BASETIMES_LCM[gender][eventId];
+  if (!bt || !secs) return null;
+  var p = 1000 * Math.pow(bt / secs, 3);
+  return Math.floor(p);
+}
+
+// Obtém pontos da marca: usa PTS_FINA se existir, senão calcula
+function pointsForMark(mark) {
+  if (mark.ptsFina && mark.ptsFina > 0) return mark.ptsFina;
+  return waPointsForMark(mark.gender, mark.eventId, mark.secs);
+}
+
+// Encontrar nível-alvo na ladder pelo ID (cls)
+function findTargetLevel(targetCls) {
+  for (var i = 0; i < PARPL_LADDER.length; i++) {
+    if (PARPL_LADDER[i].cls === targetCls) return PARPL_LADDER[i];
+  }
+  return null;
+}
+
+// Determina o escalão (por idade) do nadador. Devolve null se idade desconhecida.
+function swimmerEscalao(birthYear) {
+  return escalaoFromBirth(birthYear); // SEN / SUB23 / JUN / JOV
+}
+
+// Cálculo principal: para cada nadador (filtrado), encontra a melhor marca (em PONTOS)
+// e calcula a margem para o nível-alvo.
+function computeRanking() {
+  if (!excelData || excelData.length === 0) {
+    document.getElementById('rank-warning').innerHTML = '<div class="warning">⚠ Carrega primeiro um ficheiro Excel no separador <strong>Importar Excel</strong>.</div>';
+    document.getElementById('rank-summary').style.display = 'none';
+    document.getElementById('rank-results').innerHTML = '';
+    return;
+  }
+  document.getElementById('rank-warning').innerHTML = '';
+
+  var genero = document.getElementById('rank-genero').value;
+  var escalaoOpt = document.getElementById('rank-escalao').value;
+  var targetCls = document.getElementById('rank-target').value;
+  var sourceFilter = document.getElementById('rank-source').value;
+
+  var target = findTargetLevel(targetCls);
+  if (!target) return;
+
+  // Para cada nadador (após filtros), encontra a marca que dá MAIS pontos.
+  // (Os pontos refletem a melhor performance global do nadador.)
+  var bestByName = {}; // name -> { ..., bestPts, mark }
+
+  for (var i = 0; i < excelData.length; i++) {
+    var d = excelData[i];
+    // filtro de género
+    if (genero !== 'ALL' && d.gender !== genero) continue;
+    // filtro de origem
+    if (sourceFilter === 'RACE' && d.isLap) continue;
+    if (sourceFilter === 'LAP' && !d.isLap) continue;
+    // filtro de escalão por idade
+    if (escalaoOpt !== 'ALL') {
+      var esc = swimmerEscalao(d.birthYear);
+      if (esc !== escalaoOpt) continue;
+    }
+
+    var pts = pointsForMark(d);
+    if (pts === null) continue;
+
+    var key = d.name;
+    if (!bestByName[key] || pts > bestByName[key].bestPts) {
+      bestByName[key] = {
+        name: d.name,
+        gender: d.gender,
+        genderLabel: d.gender === 'M' ? 'Masculino' : 'Feminino',
+        club: d.club,
+        birthYear: d.birthYear,
+        eventLabel: d.eventLabel,
+        timeStr: d.timeStr,
+        isLap: d.isLap,
+        bestPts: pts,
+        ptsSource: d.ptsFina ? 'PTS_FINA' : 'WA-calc'
+      };
+    }
+  }
+
+  // Pontos do nível-alvo: 1000 − indice·10  (Índice 4 = 960p, Índice 27 = 730p)
+  var targetPts = 1000 - target.indice * 10;
+
+  // Separar em "tem" vs "não tem" e ordenar
+  var has = [], miss = [];
+  Object.keys(bestByName).forEach(function(k){
+    var r = bestByName[k];
+    r.diff = r.bestPts - targetPts;
+    if (r.bestPts >= targetPts) has.push(r); else miss.push(r);
+  });
+  // "Tem": ordenar por margem desc (quem está mais acima primeiro)
+  has.sort(function(a,b){ return b.diff - a.diff; });
+  // "Não tem": ordenar por pontos que faltam asc (quem está mais perto primeiro)
+  miss.sort(function(a,b){ return b.diff - a.diff; }); // diff negativo: maior (mais perto) primeiro
+
+  renderRanking(target, targetPts, has, miss, { genero:genero, escalao:escalaoOpt, source:sourceFilter });
+}
+
+function renderRanking(target, targetPts, has, miss, opts) {
+  var summary = document.getElementById('rank-summary');
+  var container = document.getElementById('rank-results');
+  container.innerHTML = '';
+
+  var total = has.length + miss.length;
+  summary.style.display = 'flex';
+  summary.innerHTML =
+    '<div class="excel-stat"><div class="excel-stat-num">' + total + '</div><div class="excel-stat-lbl">Nadadores avaliados</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num" style="color:#1A6B3C">' + has.length + '</div><div class="excel-stat-lbl">Já têm o nível</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num" style="color:#92400E">' + miss.length + '</div><div class="excel-stat-lbl">Ainda não têm</div></div>' +
+    '<div class="excel-stat"><div class="excel-stat-num">' + targetPts + 'p</div><div class="excel-stat-lbl">Mín. ' + target.name + '</div></div>';
+
+  if (total === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Nenhum nadador corresponde aos filtros escolhidos.</div></div>';
+    return;
+  }
+
+  function buildRow(r, pos, kind) {
+    var row = document.createElement('div');
+    row.className = 'rank-row ' + kind;
+    var diff = r.diff;
+    var diffStr, diffLbl;
+    if (kind === 'has') {
+      diffStr = '+' + diff + 'p';
+      diffLbl = 'margem acima';
+    } else {
+      diffStr = diff + 'p'; // already negative
+      diffLbl = 'faltam ' + Math.abs(diff) + 'p';
+    }
+    var lapTag = r.isLap ? ' <span class="lap-tag">PARCIAL</span>' : '';
+    var byStr = r.birthYear ? r.birthYear : '—';
+    var clubStr = r.club ? r.club + ' · ' : '';
+    var srcMark = r.ptsSource === 'PTS_FINA' ? '' : ' <span style="font-size:9.5px;color:var(--gray-500)">(WA calc.)</span>';
+
+    row.innerHTML =
+      '<div class="rank-pos">' + pos + '</div>' +
+      '<div class="rank-row-info">' +
+        '<div class="rank-row-name">' + r.name +
+          ' <span style="font-weight:500;color:var(--gray-500);font-size:12px">(' + r.genderLabel.charAt(0) + ' · ' + byStr + ')</span>' +
+        '</div>' +
+        '<div class="rank-row-sub">' + clubStr + 'Melhor: ' + r.eventLabel + lapTag + ' · ' + r.timeStr + '</div>' +
+      '</div>' +
+      '<div class="rank-row-time">' +
+        r.bestPts + 'p' + srcMark +
+        '<small>pontos WA</small>' +
+      '</div>' +
+      '<div class="rank-row-pts">' +
+        '<div class="rank-row-pts-big">' + diffStr + '</div>' +
+        '<div class="rank-row-pts-lbl">' + diffLbl + '</div>' +
+      '</div>';
+    return row;
+  }
+
+  if (has.length > 0) {
+    var t1 = document.createElement('div');
+    t1.className = 'rank-section-title has';
+    t1.innerHTML = '✓ JÁ TÊM ' + target.name + ' <span class="count">· ordenados por maior margem</span>';
+    container.appendChild(t1);
+    has.forEach(function(r,i){ container.appendChild(buildRow(r, i+1, 'has')); });
+  }
+
+  if (miss.length > 0) {
+    var t2 = document.createElement('div');
+    t2.className = 'rank-section-title miss';
+    t2.innerHTML = '◷ AINDA NÃO TÊM ' + target.name + ' <span class="count">· ordenados pelos pontos que faltam (mais perto primeiro)</span>';
+    container.appendChild(t2);
+    miss.forEach(function(r,i){ container.appendChild(buildRow(r, i+1, 'miss')); });
+  }
+}
+
+document.getElementById('btn-rank-calc').addEventListener('click', computeRanking);
+
+document.getElementById('btn-rank-clear').addEventListener('click', function(){
+  document.getElementById('rank-results').innerHTML = '';
+  document.getElementById('rank-summary').style.display = 'none';
+  document.getElementById('rank-warning').innerHTML = '';
+});
+
+document.getElementById('btn-rank-print').addEventListener('click', function(){
+  if (!document.getElementById('rank-results').children.length) {
+    window.alert('Não há ranking para imprimir. Clica em "Calcular Ranking".');
+    return;
+  }
+  var target = findTargetLevel(document.getElementById('rank-target').value);
+  var generoLbl = ({M:'Masculino',F:'Feminino',ALL:'Ambos'})[document.getElementById('rank-genero').value];
+  var escLbl = document.getElementById('rank-escalao').value;
+  var escMap = {ALL:'Todos os escalões',SEN:'Seniores',SUB23:'Sub-23',JUN:'Juniores',JOV:'Jovens'};
+  var now = new Date();
+  var dateStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  document.getElementById('rank-print-header').innerHTML =
+    'Ranking pelo Nível ' + target.name + ' — ' + generoLbl + ' · ' + escMap[escLbl];
+  document.getElementById('rank-print-footer').innerHTML =
+    'FPN · PAR Natação Pura 2025–2028 · Ranking gerado a ' + dateStr;
+  document.body.classList.add('print-rank');
+  window.print();
+});
+
+document.getElementById('btn-rank-export').addEventListener('click', function(){
+  if (!document.getElementById('rank-results').children.length) {
+    window.alert('Não há ranking para exportar. Clica em "Calcular Ranking".');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    window.alert('A biblioteca de Excel não carregou.');
+    return;
+  }
+  // Recalcular para garantir consistência
+  var genero = document.getElementById('rank-genero').value;
+  var escalaoOpt = document.getElementById('rank-escalao').value;
+  var targetCls = document.getElementById('rank-target').value;
+  var sourceFilter = document.getElementById('rank-source').value;
+  var target = findTargetLevel(targetCls);
+  var targetPts = 1000 - target.indice * 10;
+
+  var bestByName = {};
+  for (var i = 0; i < excelData.length; i++) {
+    var d = excelData[i];
+    if (genero !== 'ALL' && d.gender !== genero) continue;
+    if (sourceFilter === 'RACE' && d.isLap) continue;
+    if (sourceFilter === 'LAP' && !d.isLap) continue;
+    if (escalaoOpt !== 'ALL') { if (swimmerEscalao(d.birthYear) !== escalaoOpt) continue; }
+    var pts = pointsForMark(d);
+    if (pts === null) continue;
+    if (!bestByName[d.name] || pts > bestByName[d.name].bestPts) {
+      bestByName[d.name] = { name:d.name, gender:d.gender, genderLabel: d.gender==='M'?'Masculino':'Feminino',
+        club:d.club, birthYear:d.birthYear, eventLabel:d.eventLabel, timeStr:d.timeStr, isLap:d.isLap,
+        bestPts:pts, ptsSource: d.ptsFina ? 'PTS_FINA' : 'WA-calc' };
+    }
+  }
+  var has=[], miss=[];
+  Object.keys(bestByName).forEach(function(k){
+    var r = bestByName[k]; r.diff = r.bestPts - targetPts;
+    (r.bestPts >= targetPts ? has : miss).push(r);
+  });
+  has.sort(function(a,b){return b.diff-a.diff;});
+  miss.sort(function(a,b){return b.diff-a.diff;});
+
+  var aoa = [
+    ['Ranking pelo Nível ' + target.name + ' (mínimo ' + targetPts + ' pontos WA)'],
+    [],
+    ['Posição','Estado','Nadador','Género','Ano Nasc.','Clube','Melhor Prova','Tempo','Origem','Pontos WA','Origem Pontos','Margem (pontos)']
+  ];
+  has.forEach(function(r,i){ aoa.push([i+1,'JÁ TEM',r.name,r.genderLabel,r.birthYear||'',r.club||'',r.eventLabel,r.timeStr,r.isLap?'Parcial (Lap)':'Prova',r.bestPts,r.ptsSource,'+'+r.diff]); });
+  miss.forEach(function(r,i){ aoa.push([i+1,'FALTA',r.name,r.genderLabel,r.birthYear||'',r.club||'',r.eventLabel,r.timeStr,r.isLap?'Parcial (Lap)':'Prova',r.bestPts,r.ptsSource,r.diff]); });
+
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:8},{wch:9},{wch:26},{wch:10},{wch:10},{wch:10},{wch:16},{wch:11},{wch:14},{wch:10},{wch:13},{wch:11}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ranking ' + target.name);
+  var now = new Date();
+  var stamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+  XLSX.writeFile(wb, 'Ranking_' + target.name + '_' + stamp + '.xlsx');
+});
+
+// Adicionar cleanup do print-rank na lista de afterprint
+window.addEventListener('afterprint', function(){
+  document.body.classList.remove('print-rank');
 });
 
 updateUIForMode();
