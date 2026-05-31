@@ -779,6 +779,13 @@
       </div>
       <div class="form-grid">
         <div class="field">
+          <label for="rank-season">Época / Tabela de Mínimos</label>
+          <select id="rank-season">
+            <option value="2025">2025/2026 (época atual)</option>
+            <option value="2026">2026/2027 (próxima época)</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="rank-genero">Género</label>
           <select id="rank-genero">
             <option value="ALL">Ambos (M e F)</option>
@@ -1069,14 +1076,66 @@ var ESCALOES = {
 };
 
 // ── PARSE TIMES ──────────────────────────────────────────────────────────────
+// ── PARPL ÉPOCA 2025/2026 ────────────────────────────────────────────────────
+// Mínimos da época corrente (mais permissivos que 2026/2027).
+// Mesma ordem interna: [JO28, SEN-A, SEN-B, SUB23-A, SEN-C, SUB23-B, SUB23-C,
+//                       PA-SUB23, JUN-A, JUN-B, JUN-C, PA-JUN, JOV-A, JOV-B, JOV-C, PA-JOV]
+// Posição 0 (JO28) não fornecida nesta época — usada apenas no separador PAR PL.
+var PARPL_2025_M_RAW = {
+  '50L':[null,'22,26','22,44','22,53','22,63','22,72','22,92','23,13','23,34','23,56','23,79','23,91','24,03','24,27','24,53','24,80'],
+  '100L':[null,'49,09','49,49','49,69','49,89','50,10','50,53','50,97','51,43','51,91','52,40','52,65','52,91','53,45','54,00','54,58'],
+  '200L':[null,'1:47,91','1:48,78','1:49,22','1:49,67','1:50,13','1:51,07','1:52,04','1:53,05','1:54,10','1:55,18','1:55,74','1:56,31','1:57,48','1:58,70','1:59,98'],
+  '400L':[null,'3:50,06','3:51,84','3:52,75','3:53,68','3:54,62','3:56,55','3:58,55','4:00,61','4:02,75','4:04,96','4:06,10','4:07,26','4:09,65','4:12,13','4:14,71'],
+  '800L':[null,'7:56,09','7:59,85','8:01,78','8:03,74','8:05,73','8:09,82','8:14,04','8:18,41','8:22,95','8:27,65','8:30,07','8:32,53','8:37,61','8:42,89','8:48,40'],
+  '1500L':[null,'15:14,71','15:21,89','15:25,57','15:29,31','15:33,10','15:40,89','15:48,94','15:57,27','16:05,91','16:14,87','16:19,47','16:24,16','16:33,83','16:43,88','16:54,35'],
+  '50C':[null,'25,14','25,35','25,45','25,56','25,67','25,90','26,13','26,37','26,62','26,89','27,02','27,16','27,44','27,74','28,05'],
+  '100C':[null,'54,51','54,95','55,17','55,40','55,63','56,10','56,59','57,09','57,62','58,16','58,44','58,73','59,32','59,93','1:00,57'],
+  '200C':[null,'1:59,37','2:00,35','2:00,86','2:01,37','2:01,89','2:02,96','2:04,06','2:05,21','2:06,40','2:07,64','2:08,28','2:08,93','2:10,27','2:11,67','2:13,13'],
+  '50B':[null,'27,48','27,70','27,82','27,93','28,05','28,29','28,54','28,79','29,06','29,34','29,48','29,63','29,93','30,24','30,56'],
+  '100B':[null,'1:00,43','1:00,92','1:01,17','1:01,42','1:01,68','1:02,22','1:02,77','1:03,34','1:03,94','1:04,55','1:04,87','1:05,20','1:05,86','1:06,56','1:07,29'],
+  '200B':[null,'2:11,65','2:12,68','2:13,00','2:13,74','2:14,28','2:15,40','2:16,55','2:17,75','2:18,98','2:20,26','2:20,92','2:21,60','2:22,98','2:24,42','2:25,92'],
+  '50M':[null,'23,61','23,80','23,90','24,00','24,10','24,31','24,52','24,74','24,97','25,21','25,34','25,46','25,72','25,99','26,27'],
+  '100M':[null,'52,38','52,81','53,02','53,24','53,47','53,92','54,40','54,89','55,40','55,93','56,20','56,48','57,05','57,65','58,27'],
+  '200M':[null,'1:57,62','1:58,59','1:59,08','1:59,58','2:00,10','2:01,15','2:02,23','2:03,36','2:04,53','2:05,75','2:06,38','2:07,02','2:08,34','2:09,71','2:11,15'],
+  '200E':[null,'1:58,36','1:59,29','1:59,77','2:00,25','2:00,74','2:01,75','2:02,79','2:03,87','2:04,98','2:06,14','2:06,74','2:07,34','2:08,59','2:09,89','2:11,25'],
+  '400E':[null,'4:16,42','4:18,47','4:19,52','4:20,59','4:21,68','4:23,91','4:26,22','4:28,61','4:31,09','4:33,66','4:34,98','4:36,33','4:39,11','4:42,01','4:45,03']
+};
+var PARPL_2025_F_RAW = {
+  '50L':[null,'25,08','25,28','25,39','25,49','25,60','25,82','26,05','26,29','26,53','26,79','26,92','27,06','27,33','27,62','27,92'],
+  '100L':[null,'54,43','54,86','55,08','55,30','55,53','56,00','56,48','56,98','57,50','58,03','58,31','58,59','59,17','59,77','1:00,40'],
+  '200L':[null,'1:59,10','2:00,06','2:00,56','2:01,06','2:01,57','2:02,62','2:03,70','2:04,83','2:05,99','2:07,21','2:07,83','2:08,47','2:09,78','2:11,14','2:12,57'],
+  '400L':[null,'4:10,60','4:12,68','4:13,75','4:14,84','4:15,94','4:18,21','4:20,56','4:23,00','4:25,53','4:28,16','4:29,51','4:30,90','4:33,75','4:36,73','4:39,84'],
+  '800L':[null,'8:33,91','8:38,07','8:40,21','8:42,37','8:44,58','8:49,11','8:53,79','8:58,65','9:03,69','9:08,92','9:11,62','9:14,36','9:20,03','9:25,93','9:32,09'],
+  '1500L':[null,'16:24,66','16:32,82','16:37,01','16:41,27','16:45,60','16:54,50','17:03,72','17:13,28','17:23,22','17:33,54','17:38,86','17:44,29','17:55,49','18:07,17','18:19,38'],
+  '50C':[null,'28,58','28,81','28,93','29,06','29,18','29,43','29,70','29,97','30,25','30,54','30,70','30,85','31,17','31,50','31,85'],
+  '100C':[null,'1:00,95','1:01,45','1:01,70','1:01,97','1:02,23','1:02,78','1:03,34','1:03,93','1:04,54','1:05,17','1:05,50','1:05,83','1:06,51','1:07,23','1:07,97'],
+  '200C':[null,'2:12,43','2:13,54','2:14,12','2:14,70','2:15,29','2:16,51','2:17,77','2:19,08','2:20,44','2:21,86','2:22,59','2:23,34','2:24,88','2:26,49','2:28,17'],
+  '50B':[null,'31,19','31,45','31,58','31,72','31,86','32,14','32,43','32,73','33,05','33,37','33,54','33,71','34,07','34,44','34,83'],
+  '100B':[null,'1:07,72','1:08,26','1:08,54','1:08,82','1:09,10','1:09,69','1:10,30','1:10,93','1:11,58','1:12,25','1:12,60','1:12,96','1:13,69','1:14,45','1:15,24'],
+  '200B':[null,'2:26,18','2:27,37','2:27,97','2:28,59','2:29,22','2:30,52','2:31,85','2:33,24','2:34,68','2:36,18','2:36,95','2:37,73','2:39,35','2:41,04','2:42,80'],
+  '50M':[null,'26,41','26,64','26,75','26,87','26,99','27,24','27,49','27,76','28,04','28,33','28,48','28,63','28,94','29,27','29,61'],
+  '100M':[null,'58,12','58,60','58,84','59,09','59,34','59,86','1:00,39','1:00,95','1:01,52','1:02,12','1:02,43','1:02,74','1:03,39','1:04,07','1:04,77'],
+  '200M':[null,'2:10,50','2:11,59','2:12,15','2:12,71','2:13,29','2:14,48','2:15,71','2:16,98','2:18,30','2:19,68','2:20,39','2:21,11','2:22,61','2:24,17','2:25,80'],
+  '200E':[null,'2:13,06','2:14,13','2:14,68','2:15,24','2:15,80','2:16,96','2:18,17','2:19,41','2:20,70','2:22,04','2:22,73','2:23,44','2:24,89','2:26,40','2:27,97'],
+  '400E':[null,'4:42,26','4:44,60','4:45,81','4:47,03','4:48,28','4:50,83','4:53,48','4:56,23','4:59,09','5:02,06','5:03,59','5:05,15','5:08,37','5:11,73','5:15,24']
+};
+
 var PARPL = { M:{}, F:{} };
+var PARPL_2025 = { M:{}, F:{} };
 var PO    = { M:{}, F:{} };
 for (var i = 0; i < EVENTS.length; i++) {
   var ev = EVENTS[i];
   PARPL.M[ev.id] = PARPL_M_RAW[ev.id].map(parseTime);
   PARPL.F[ev.id] = PARPL_F_RAW[ev.id].map(parseTime);
+  PARPL_2025.M[ev.id] = PARPL_2025_M_RAW[ev.id].map(parseTime);
+  PARPL_2025.F[ev.id] = PARPL_2025_F_RAW[ev.id].map(parseTime);
   PO.M[ev.id]    = PO_M_RAW[ev.id].map(parseTime);
   PO.F[ev.id]    = PO_F_RAW[ev.id].map(parseTime);
+}
+
+// Devolve a estrutura PARPL para a época escolhida
+function getParPlForSeason(season) {
+  return season === '2025' ? PARPL_2025 : PARPL;
 }
 
 // ── STATE ────────────────────────────────────────────────────────────────────
@@ -2176,6 +2235,8 @@ function computeRanking() {
   var escalaoOpt = document.getElementById('rank-escalao').value;
   var targetCls = document.getElementById('rank-target').value;
   var sourceFilter = document.getElementById('rank-source').value;
+  var season = document.getElementById('rank-season').value;
+  var PARPL_S = getParPlForSeason(season);
 
   var target = findTargetLevel(targetCls);
   if (!target) return;
@@ -2199,8 +2260,8 @@ function computeRanking() {
       if (esc !== escalaoOpt) continue;
     }
 
-    // Tempo do índice-alvo nesta prova × género
-    var targetTimes = PARPL[d.gender] && PARPL[d.gender][d.eventId];
+    // Tempo do índice-alvo nesta prova × género (na época escolhida)
+    var targetTimes = PARPL_S[d.gender] && PARPL_S[d.gender][d.eventId];
     if (!targetTimes) continue;
     var targetTimeForEvent = targetTimes[target.idx];
     if (targetTimeForEvent == null) continue;
@@ -2242,7 +2303,7 @@ function computeRanking() {
   has.sort(function(a,b){ return b.bestDiff - a.bestDiff; });   // maior margem primeiro
   miss.sort(function(a,b){ return b.bestDiff - a.bestDiff; }); // menos negativo (mais perto) primeiro
 
-  renderRanking(target, has, miss, { genero:genero, escalao:escalaoOpt, source:sourceFilter });
+  renderRanking(target, has, miss, { genero:genero, escalao:escalaoOpt, source:sourceFilter, season:season });
 }
 
 function renderRanking(target, has, miss, opts) {
@@ -2251,12 +2312,13 @@ function renderRanking(target, has, miss, opts) {
   container.innerHTML = '';
 
   var total = has.length + miss.length;
+  var seasonLbl = opts && opts.season === '2025' ? '2025/2026' : '2026/2027';
   summary.style.display = 'flex';
   summary.innerHTML =
     '<div class="excel-stat"><div class="excel-stat-num">' + total + '</div><div class="excel-stat-lbl">Nadadores avaliados</div></div>' +
     '<div class="excel-stat"><div class="excel-stat-num" style="color:#1A6B3C">' + has.length + '</div><div class="excel-stat-lbl">Já têm ' + target.name + '</div></div>' +
     '<div class="excel-stat"><div class="excel-stat-num" style="color:#92400E">' + miss.length + '</div><div class="excel-stat-lbl">Ainda não têm</div></div>' +
-    '<div class="excel-stat"><div class="excel-stat-num">−' + (target.indice * 10) + 'p</div><div class="excel-stat-lbl">Abaixo da JO28</div></div>';
+    '<div class="excel-stat"><div class="excel-stat-num">−' + (target.indice * 10) + 'p</div><div class="excel-stat-lbl">Mínimos ' + seasonLbl + '</div></div>';
 
   if (total === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Nenhum nadador corresponde aos filtros escolhidos.</div></div>';
@@ -2335,10 +2397,12 @@ document.getElementById('btn-rank-print').addEventListener('click', function(){
   var generoLbl = ({M:'Masculino',F:'Feminino',ALL:'Ambos'})[document.getElementById('rank-genero').value];
   var escLbl = document.getElementById('rank-escalao').value;
   var escMap = {ALL:'Todos os escalões',SEN:'Seniores',SUB23:'Sub-23',JUN:'Juniores',JOV:'Jovens'};
+  var season = document.getElementById('rank-season').value;
+  var seasonLbl = season === '2025' ? '2025/2026' : '2026/2027';
   var now = new Date();
   var dateStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
   document.getElementById('rank-print-header').innerHTML =
-    'Ranking pelo Nível ' + target.name + ' — ' + generoLbl + ' · ' + escMap[escLbl];
+    'Ranking pelo Nível ' + target.name + ' · Mínimos ' + seasonLbl + ' — ' + generoLbl + ' · ' + escMap[escLbl];
   document.getElementById('rank-print-footer').innerHTML =
     'FPN · PAR Natação Pura 2025–2028 · Ranking gerado a ' + dateStr;
   document.body.classList.add('print-rank');
@@ -2359,6 +2423,8 @@ document.getElementById('btn-rank-export').addEventListener('click', function(){
   var escalaoOpt = document.getElementById('rank-escalao').value;
   var targetCls = document.getElementById('rank-target').value;
   var sourceFilter = document.getElementById('rank-source').value;
+  var season = document.getElementById('rank-season').value;
+  var PARPL_S = getParPlForSeason(season);
   var target = findTargetLevel(targetCls);
 
   var bestByName = {};
@@ -2368,7 +2434,7 @@ document.getElementById('btn-rank-export').addEventListener('click', function(){
     if (sourceFilter === 'RACE' && d.isLap) continue;
     if (sourceFilter === 'LAP' && !d.isLap) continue;
     if (escalaoOpt !== 'ALL') { if (swimmerEscalao(d.birthYear) !== escalaoOpt) continue; }
-    var targetTimes = PARPL[d.gender] && PARPL[d.gender][d.eventId];
+    var targetTimes = PARPL_S[d.gender] && PARPL_S[d.gender][d.eventId];
     if (!targetTimes) continue;
     var tgtTime = targetTimes[target.idx];
     if (tgtTime == null) continue;
@@ -2395,8 +2461,9 @@ document.getElementById('btn-rank-export').addEventListener('click', function(){
   has.sort(function(a,b){return b.bestDiff-a.bestDiff;});
   miss.sort(function(a,b){return b.bestDiff-a.bestDiff;});
 
+  var seasonLbl = season === '2025' ? '2025/2026' : '2026/2027';
   var aoa = [
-    ['Ranking pelo Nível ' + target.name + ' (Índice ' + target.indice + ' · −' + (target.indice*10) + 'p abaixo da marca JO28 de cada prova)'],
+    ['Ranking pelo Nível ' + target.name + ' · Mínimos ' + seasonLbl + ' (Índice ' + target.indice + ' · −' + (target.indice*10) + 'p abaixo da marca JO28)'],
     [],
     ['Posição','Estado','Nadador','Género','Ano Nasc.','Clube','Melhor Prova','Tempo','Pontos Marca','Tempo do Índice','Pontos do Índice','Margem (pontos)','Origem Pontos','Origem Marca']
   ];
@@ -2410,7 +2477,7 @@ document.getElementById('btn-rank-export').addEventListener('click', function(){
   XLSX.utils.book_append_sheet(wb, ws, 'Ranking ' + target.name);
   var now = new Date();
   var stamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
-  XLSX.writeFile(wb, 'Ranking_' + target.name + '_' + stamp + '.xlsx');
+  XLSX.writeFile(wb, 'Ranking_' + target.name + '_' + season + '-' + (season==='2025'?'26':'27') + '_' + stamp + '.xlsx');
 });
 
 // Adicionar cleanup do print-rank na lista de afterprint
